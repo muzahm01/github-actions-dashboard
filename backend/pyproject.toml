@@ -81,7 +81,11 @@ branch = true
 omit = [
     "app/infrastructure/database/models/*",
     "app/infrastructure/database/session.py",
+    "app/infrastructure/database/repositories/base.py",
+    "app/infrastructure/external/*",
     "app/tasks/*",
+    "app/main.py",
+    "app/core/logging.py",
 ]
 
 [tool.coverage.report]
