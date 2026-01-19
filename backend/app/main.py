@@ -18,12 +18,25 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
+    from app.infrastructure.database.session import close_db, init_db
+
     setup_logging(settings.log_level)
     logger.info(
         "Starting GitHub Actions Dashboard",
         extra={"environment": settings.environment},
     )
+
+    # Initialize database tables
+    if settings.environment != "testing":
+        try:
+            await init_db()
+        except Exception as e:
+            logger.warning(f"Database initialization skipped: {e}")
+
     yield
+
+    # Cleanup
+    await close_db()
     logger.info("Shutting down GitHub Actions Dashboard")
 
 
