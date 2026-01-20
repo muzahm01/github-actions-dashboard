@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -21,8 +22,12 @@ class TestGitHubWebhook:
         return f"sha256={signature}"
 
     @pytest.mark.asyncio
+    @patch("app.api.v1.webhooks.process_webhook_event")
     async def test_webhook_valid_signature_accepted(
-        self, client: AsyncClient, sample_workflow_run_payload: dict[str, Any]
+        self,
+        mock_task: MagicMock,
+        client: AsyncClient,
+        sample_workflow_run_payload: dict[str, Any],
     ) -> None:
         """Should accept webhook with valid signature."""
         payload = json.dumps(sample_workflow_run_payload).encode()
@@ -43,6 +48,12 @@ class TestGitHubWebhook:
         data = response.json()
         assert data["status"] == "queued"
         assert data["delivery_id"] == "test-delivery-001"
+        # Verify the task was queued
+        mock_task.delay.assert_called_once_with(
+            event_type="workflow_run",
+            delivery_id="test-delivery-001",
+            payload=sample_workflow_run_payload,
+        )
 
     @pytest.mark.asyncio
     async def test_webhook_invalid_signature_rejected(
@@ -78,9 +89,13 @@ class TestGitHubWebhook:
         assert response.status_code == 422  # Validation error for missing headers
 
     @pytest.mark.asyncio
-    async def test_webhook_workflow_job_event(self, client: AsyncClient) -> None:
+    @patch("app.api.v1.webhooks.process_webhook_event")
+    async def test_webhook_workflow_job_event(
+        self, mock_task: MagicMock, client: AsyncClient
+    ) -> None:
         """Should accept workflow_job event type."""
-        payload = json.dumps({"action": "completed", "workflow_job": {"id": 123}}).encode()
+        payload_dict = {"action": "completed", "workflow_job": {"id": 123}}
+        payload = json.dumps(payload_dict).encode()
         signature = self._generate_signature(payload)
 
         response = await client.post(
@@ -95,3 +110,9 @@ class TestGitHubWebhook:
         )
 
         assert response.status_code == 202
+        # Verify the task was queued
+        mock_task.delay.assert_called_once_with(
+            event_type="workflow_job",
+            delivery_id="test-delivery-003",
+            payload=payload_dict,
+        )

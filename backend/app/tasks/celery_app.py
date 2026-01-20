@@ -12,6 +12,7 @@ celery_app = Celery(
     include=[
         "app.tasks.workflow_tasks",
         "app.tasks.analysis_tasks",
+        "app.tasks.webhook_tasks",
     ],
 )
 

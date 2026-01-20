@@ -11,6 +11,7 @@ from app.application.services.webhook_processor import (
 )
 from app.config import Settings, get_settings
 from app.core.exceptions import WebhookValidationError
+from app.tasks.webhook_tasks import process_webhook_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,9 +55,12 @@ async def github_webhook(
         )
 
         # Queue for processing based on event type
-        if x_github_event == "workflow_run" or x_github_event == "workflow_job":
-            # TODO: Queue Celery task
-            pass
+        if x_github_event in ("workflow_run", "workflow_job"):
+            process_webhook_event.delay(
+                event_type=x_github_event,
+                delivery_id=x_github_delivery,
+                payload=data,
+            )
 
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
