@@ -1,20 +1,64 @@
 """Workflow endpoints."""
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.infrastructure.database.repositories.workflow_repo import WorkflowRepository
+from app.infrastructure.database.session import get_db
 
 router = APIRouter()
 
 
 @router.get("/")
-async def list_workflows() -> dict[str, list[dict[str, str]]]:
-    """List all workflows."""
-    return {"workflows": []}
+async def list_workflows(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> dict:
+    """List all workflows with pagination."""
+    repo = WorkflowRepository(db)
+    workflows = await repo.get_all(limit=limit, offset=offset)
+    total = await repo.count()
+
+    return {
+        "workflows": [
+            {
+                "id": w.id,
+                "github_id": w.github_id,
+                "name": w.name,
+                "path": w.path,
+                "state": w.state,
+                "repo_id": w.repo_id,
+            }
+            for w in workflows
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/{workflow_id}")
-async def get_workflow(workflow_id: int) -> dict[str, int | str | None]:
+async def get_workflow(
+    workflow_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Get workflow details."""
+    repo = WorkflowRepository(db)
+    workflow = await repo.get_by_id(workflow_id)
+
+    if not workflow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow with id {workflow_id} not found",
+        )
+
     return {
-        "id": workflow_id,
-        "name": None,
-        "status": "pending",
+        "id": workflow.id,
+        "github_id": workflow.github_id,
+        "name": workflow.name,
+        "path": workflow.path,
+        "state": workflow.state,
+        "repo_id": workflow.repo_id,
     }
