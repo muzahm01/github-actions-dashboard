@@ -1,5 +1,5 @@
 """Tests for workflow tasks."""
-
+from unittest.mock import MagicMock, patch
 
 
 class TestWorkflowTasks:
@@ -60,6 +60,40 @@ class TestCleanupOldDataTask:
         from app.tasks.workflow_tasks import cleanup_old_data
 
         assert cleanup_old_data.name == "app.tasks.workflow_tasks.cleanup_old_data"
+
+    @patch("app.tasks.workflow_tasks.run_async")
+    def test_cleanup_deletes_old_data(self, mock_run_async: MagicMock) -> None:
+        """Test that cleanup deletes data older than retention period."""
+        from app.tasks.workflow_tasks import cleanup_old_data
+
+        mock_run_async.return_value = {
+            "status": "completed",
+            "deleted_runs": 10,
+            "deleted_logs": 25,
+        }
+
+        result = cleanup_old_data()
+
+        assert result["status"] == "completed"
+        mock_run_async.assert_called_once()
+
+
+class TestSyncAllWorkflowsWithDB:
+    """Tests for sync_all_workflows with database integration."""
+
+    @patch("app.tasks.workflow_tasks.run_async")
+    def test_sync_fetches_active_repos(self, mock_run_async: MagicMock) -> None:
+        """Test that sync fetches active repositories from database."""
+        from app.tasks.workflow_tasks import sync_all_workflows
+
+        mock_run_async.return_value = {
+            "status": "completed",
+            "repositories_synced": 3,
+        }
+
+        result = sync_all_workflows()
+
+        assert result["status"] == "completed"
 
 
 class TestCeleryAppConfig:

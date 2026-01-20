@@ -96,3 +96,13 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
         else:
             run = WorkflowRun(**run_data)
             return await self.create(run)
+
+    async def get_runs_before_date(self, cutoff_date: datetime) -> list[WorkflowRun]:
+        """Get runs created before the cutoff date for cleanup."""
+        stmt = (
+            select(WorkflowRun)
+            .where(WorkflowRun.created_at < cutoff_date)
+            .options(selectinload(WorkflowRun.jobs))
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
