@@ -52,6 +52,35 @@ async def list_runs(
     }
 
 
+@router.get("/failures")
+async def get_recent_failures(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[dict]:
+    """Get recent failed workflow runs."""
+    repo = WorkflowRunRepository(db)
+    runs = await repo.get_recent_failures(limit=limit)
+
+    return [
+        {
+            "id": r.id,
+            "github_id": r.github_id,
+            "run_number": r.run_number,
+            "status": r.status,
+            "conclusion": r.conclusion,
+            "head_branch": r.head_branch,
+            "head_sha": r.head_sha,
+            "event": r.event,
+            "actor": r.actor,
+            "html_url": r.html_url,
+            "workflow_id": r.workflow_id,
+            "run_started_at": r.run_started_at.isoformat() if r.run_started_at else None,
+            "duration_seconds": r.duration_seconds,
+        }
+        for r in runs
+    ]
+
+
 @router.get("/{run_id}")
 async def get_run(
     run_id: int,

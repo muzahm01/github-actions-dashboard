@@ -14,6 +14,7 @@ celery_app = Celery(
         "app.tasks.workflow_tasks",
         "app.tasks.analysis_tasks",
         "app.tasks.webhook_tasks",
+        "app.tasks.maintenance_tasks",
     ],
 )
 
@@ -42,6 +43,10 @@ celery_app.conf.update(
         "cleanup-old-data-daily": {
             "task": "app.tasks.workflow_tasks.cleanup_old_data",
             "schedule": 86400.0,  # 24 hours
+        },
+        "health-check-every-hour": {
+            "task": "app.tasks.maintenance_tasks.health_check",
+            "schedule": 3600.0,  # 1 hour
         },
     },
 )

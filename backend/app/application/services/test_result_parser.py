@@ -598,6 +598,299 @@ class DotNetParser(BaseParser):
         )
 
 
+class UnittestParser(BaseParser):
+    """Parser for Python unittest output."""
+
+    # unittest output patterns
+    OK_PATTERN = re.compile(r"^OK$", re.MULTILINE)
+    FAILED_PATTERN = re.compile(r"^FAILED \(.*\)$", re.MULTILINE)
+    RAN_PATTERN = re.compile(r"Ran (\d+) tests? in ([\d.]+)s")
+    FAILURES_PATTERN = re.compile(r"failures?=(\d+)")
+    ERRORS_PATTERN = re.compile(r"errors?=(\d+)")
+    SKIPPED_PATTERN = re.compile(r"skipped=(\d+)")
+
+    def can_parse(self, log_content: str) -> bool:
+        """Check for unittest indicators."""
+        if not log_content:
+            return False
+        content = self.preprocess(log_content)
+        return self.RAN_PATTERN.search(content) is not None and (
+            "OK" in content or "FAILED" in content
+        )
+
+    def parse(self, log_content: str) -> TestResult | None:
+        """Parse unittest output."""
+        content = self.preprocess(log_content)
+
+        ran_match = self.RAN_PATTERN.search(content)
+        if not ran_match:
+            return None
+
+        total = int(ran_match.group(1))
+        duration = float(ran_match.group(2))
+
+        failures = 0
+        errors = 0
+        skipped = 0
+
+        failures_match = self.FAILURES_PATTERN.search(content)
+        if failures_match:
+            failures = int(failures_match.group(1))
+
+        errors_match = self.ERRORS_PATTERN.search(content)
+        if errors_match:
+            errors = int(errors_match.group(1))
+
+        skipped_match = self.SKIPPED_PATTERN.search(content)
+        if skipped_match:
+            skipped = int(skipped_match.group(1))
+
+        failed = failures + errors
+        passed = total - failed - skipped
+
+        return TestResult(
+            framework="unittest",
+            total=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            duration_seconds=duration,
+        )
+
+
+class Nose2Parser(BaseParser):
+    """Parser for Python nose2 output."""
+
+    # nose2 output patterns
+    RAN_PATTERN = re.compile(r"Ran (\d+) tests? in ([\d.]+)s")
+    OK_PATTERN = re.compile(r"^OK$", re.MULTILINE)
+    FAILED_PATTERN = re.compile(r"^FAILED", re.MULTILINE)
+    FAILURES_PATTERN = re.compile(r"failures?=(\d+)")
+    ERRORS_PATTERN = re.compile(r"errors?=(\d+)")
+    SKIPPED_PATTERN = re.compile(r"skipped=(\d+)")
+    NOSE2_INDICATOR = re.compile(r"nose2|\.\.\.+")
+
+    def can_parse(self, log_content: str) -> bool:
+        """Check for nose2 indicators."""
+        if not log_content:
+            return False
+        content = self.preprocess(log_content)
+        # nose2 output is similar to unittest but may have nose2 specific markers
+        has_ran = self.RAN_PATTERN.search(content) is not None
+        has_dots = re.search(r"^[.FEsxX]+$", content, re.MULTILINE) is not None
+        return has_ran and has_dots and "nose2" in content.lower()
+
+    def parse(self, log_content: str) -> TestResult | None:
+        """Parse nose2 output."""
+        content = self.preprocess(log_content)
+
+        ran_match = self.RAN_PATTERN.search(content)
+        if not ran_match:
+            return None
+
+        total = int(ran_match.group(1))
+        duration = float(ran_match.group(2))
+
+        failures = 0
+        errors = 0
+        skipped = 0
+
+        failures_match = self.FAILURES_PATTERN.search(content)
+        if failures_match:
+            failures = int(failures_match.group(1))
+
+        errors_match = self.ERRORS_PATTERN.search(content)
+        if errors_match:
+            errors = int(errors_match.group(1))
+
+        skipped_match = self.SKIPPED_PATTERN.search(content)
+        if skipped_match:
+            skipped = int(skipped_match.group(1))
+
+        failed = failures + errors
+        passed = total - failed - skipped
+
+        return TestResult(
+            framework="nose2",
+            total=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            duration_seconds=duration,
+        )
+
+
+class TestNGParser(BaseParser):
+    """Parser for Java TestNG output."""
+
+    # TestNG output patterns
+    SUMMARY_PATTERN = re.compile(
+        r"Total tests run: (\d+), (?:Passes: (\d+), )?Failures: (\d+), Skips: (\d+)"
+    )
+    ALT_PATTERN = re.compile(r"Tests run: (\d+), Failures: (\d+), Errors: (\d+), Skipped: (\d+)")
+    TIME_PATTERN = re.compile(r"Total time: ([\d.]+) seconds?")
+    TESTNG_INDICATOR = re.compile(r"testng|TestNG")
+
+    def can_parse(self, log_content: str) -> bool:
+        """Check for TestNG indicators."""
+        if not log_content:
+            return False
+        content = self.preprocess(log_content)
+        return self.TESTNG_INDICATOR.search(content) is not None and (
+            self.SUMMARY_PATTERN.search(content) is not None
+            or self.ALT_PATTERN.search(content) is not None
+        )
+
+    def parse(self, log_content: str) -> TestResult | None:
+        """Parse TestNG output."""
+        content = self.preprocess(log_content)
+
+        # Try main summary pattern first
+        match = self.SUMMARY_PATTERN.search(content)
+        if match:
+            total = int(match.group(1))
+            passed = int(match.group(2)) if match.group(2) else 0
+            failed = int(match.group(3))
+            skipped = int(match.group(4))
+            if not passed:
+                passed = total - failed - skipped
+        else:
+            # Try alternative pattern
+            match = self.ALT_PATTERN.search(content)
+            if not match:
+                return None
+            total = int(match.group(1))
+            failures = int(match.group(2))
+            errors = int(match.group(3))
+            skipped = int(match.group(4))
+            failed = failures + errors
+            passed = total - failed - skipped
+
+        # Get duration
+        duration = None
+        time_match = self.TIME_PATTERN.search(content)
+        if time_match:
+            duration = float(time_match.group(1))
+
+        return TestResult(
+            framework="testng",
+            total=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            duration_seconds=duration,
+        )
+
+
+class MinitestParser(BaseParser):
+    """Parser for Ruby Minitest output."""
+
+    # Minitest output patterns
+    SUMMARY_PATTERN = re.compile(
+        r"(\d+) runs?, (\d+) assertions?, (\d+) failures?, (\d+) errors?, (\d+) skips?"
+    )
+    TIME_PATTERN = re.compile(r"Finished in ([\d.]+)(?:s| seconds?)")
+
+    def can_parse(self, log_content: str) -> bool:
+        """Check for Minitest indicators."""
+        if not log_content:
+            return False
+        content = self.preprocess(log_content)
+        return self.SUMMARY_PATTERN.search(content) is not None
+
+    def parse(self, log_content: str) -> TestResult | None:
+        """Parse Minitest output."""
+        content = self.preprocess(log_content)
+
+        match = self.SUMMARY_PATTERN.search(content)
+        if not match:
+            return None
+
+        total = int(match.group(1))
+        # assertions = int(match.group(2))  # Not used in TestResult
+        failures = int(match.group(3))
+        errors = int(match.group(4))
+        skipped = int(match.group(5))
+
+        failed = failures + errors
+        passed = total - failed - skipped
+
+        # Get duration
+        duration = None
+        time_match = self.TIME_PATTERN.search(content)
+        if time_match:
+            duration = float(time_match.group(1))
+
+        return TestResult(
+            framework="minitest",
+            total=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            duration_seconds=duration,
+        )
+
+
+class PlaywrightParser(BaseParser):
+    """Parser for Playwright test output."""
+
+    # Playwright output patterns
+    SUMMARY_PATTERN = re.compile(r"(\d+) passed(?:.*?(\d+) failed)?(?:.*?(\d+) skipped)?")
+    ALT_PATTERN = re.compile(
+        r"(\d+) (?:test|spec)s? (?:passed|total)(?:.*?(\d+) failed)?(?:.*?(\d+) skipped)?"
+    )
+    TIME_PATTERN = re.compile(r"\(([\d.]+)(?:s|ms)\)")
+    PLAYWRIGHT_INDICATOR = re.compile(r"playwright|Running \d+ tests?|chromium|firefox|webkit")
+
+    def can_parse(self, log_content: str) -> bool:
+        """Check for Playwright indicators."""
+        if not log_content:
+            return False
+        content = self.preprocess(log_content)
+        return self.PLAYWRIGHT_INDICATOR.search(content) is not None and (
+            self.SUMMARY_PATTERN.search(content) is not None or "passed" in content
+        )
+
+    def parse(self, log_content: str) -> TestResult | None:
+        """Parse Playwright output."""
+        content = self.preprocess(log_content)
+
+        # Try main pattern
+        match = self.SUMMARY_PATTERN.search(content)
+        if match:
+            passed = int(match.group(1))
+            failed = int(match.group(2)) if match.group(2) else 0
+            skipped = int(match.group(3)) if match.group(3) else 0
+        else:
+            # Try alternative pattern
+            match = self.ALT_PATTERN.search(content)
+            if not match:
+                return None
+            passed = int(match.group(1))
+            failed = int(match.group(2)) if match.group(2) else 0
+            skipped = int(match.group(3)) if match.group(3) else 0
+
+        total = passed + failed + skipped
+
+        # Get duration
+        duration = None
+        time_match = self.TIME_PATTERN.search(content)
+        if time_match:
+            duration = float(time_match.group(1))
+            # Check if it's in milliseconds
+            if "ms" in content[time_match.start() : time_match.end() + 5]:
+                duration /= 1000
+
+        return TestResult(
+            framework="playwright",
+            total=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            duration_seconds=duration,
+        )
+
+
 class TestResultParserService:
     """Service that orchestrates multiple test result parsers."""
 
@@ -610,14 +903,19 @@ class TestResultParserService:
         """Get default list of parsers."""
         return [
             PytestParser(),
+            UnittestParser(),
+            Nose2Parser(),
             JestParser(),
             GoTestParser(),
             MochaParser(),
             VitestParser(),
+            PlaywrightParser(),
             RSpecParser(),
+            MinitestParser(),
             CargoTestParser(),
             PHPUnitParser(),
             JUnitParser(),
+            TestNGParser(),
             DotNetParser(),
         ]
 

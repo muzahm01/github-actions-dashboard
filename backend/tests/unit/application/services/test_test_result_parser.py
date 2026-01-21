@@ -10,12 +10,17 @@ from app.application.services.test_result_parser import (
     GoTestParser,
     JestParser,
     JUnitParser,
+    MinitestParser,
     MochaParser,
+    Nose2Parser,
     PHPUnitParser,
+    PlaywrightParser,
     PytestParser,
     RSpecParser,
+    TestNGParser,
     TestResult,
     TestResultParserService,
+    UnittestParser,
     VitestParser,
 )
 
@@ -631,3 +636,228 @@ class TestFailureDetail:
 
         with pytest.raises(AttributeError):
             detail.test_name = "modified"  # type: ignore[misc]
+
+
+class TestUnittestParser:
+    """Test suite for Python unittest log parser."""
+
+    @pytest.fixture
+    def parser(self) -> UnittestParser:
+        """Create parser instance."""
+        return UnittestParser()
+
+    def test_can_parse_unittest_output(self, parser: UnittestParser) -> None:
+        """Should detect unittest output."""
+        assert parser.can_parse("Ran 10 tests in 0.123s\n\nOK") is True
+
+    def test_can_parse_unittest_failure_output(self, parser: UnittestParser) -> None:
+        """Should detect unittest failure output."""
+        assert parser.can_parse("Ran 10 tests in 0.5s\n\nFAILED (failures=2)") is True
+
+    def test_cannot_parse_empty(self, parser: UnittestParser) -> None:
+        """Should not detect empty log."""
+        assert parser.can_parse("") is False
+
+    def test_parse_all_passing(self, parser: UnittestParser) -> None:
+        """Should parse all passing tests."""
+        log = """
+        ......
+        ----------------------------------------------------------------------
+        Ran 6 tests in 0.123s
+
+        OK
+        """
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.framework == "unittest"
+        assert result.total == 6
+        assert result.passed == 6
+        assert result.failed == 0
+        assert result.duration_seconds == pytest.approx(0.123)
+
+    def test_parse_with_failures(self, parser: UnittestParser) -> None:
+        """Should parse tests with failures."""
+        log = """
+        ...F.E
+        ----------------------------------------------------------------------
+        Ran 6 tests in 0.5s
+
+        FAILED (failures=1, errors=1)
+        """
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.total == 6
+        assert result.failed == 2  # 1 failure + 1 error
+        assert result.passed == 4
+
+    def test_parse_with_skipped(self, parser: UnittestParser) -> None:
+        """Should parse tests with skipped."""
+        log = """
+        ...ss
+        Ran 5 tests in 0.1s
+
+        OK (skipped=2)
+        """
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.total == 5
+        assert result.skipped == 2
+        assert result.passed == 3
+
+
+class TestNose2ParserTests:
+    """Test suite for nose2 log parser."""
+
+    @pytest.fixture
+    def parser(self) -> Nose2Parser:
+        """Create parser instance."""
+        return Nose2Parser()
+
+    def test_can_parse_nose2_output(self, parser: Nose2Parser) -> None:
+        """Should detect nose2 output."""
+        log = "nose2 test run\n.....\nRan 5 tests in 0.123s\nOK"
+        assert parser.can_parse(log) is True
+
+    def test_cannot_parse_empty(self, parser: Nose2Parser) -> None:
+        """Should not detect empty log."""
+        assert parser.can_parse("") is False
+
+
+class TestTestNGParser:
+    """Test suite for TestNG log parser."""
+
+    @pytest.fixture
+    def parser(self) -> TestNGParser:
+        """Create parser instance."""
+        return TestNGParser()
+
+    def test_can_parse_testng_output(self, parser: TestNGParser) -> None:
+        """Should detect TestNG output."""
+        log = "TestNG: Total tests run: 10, Failures: 0, Skips: 0"
+        assert parser.can_parse(log) is True
+
+    def test_cannot_parse_empty(self, parser: TestNGParser) -> None:
+        """Should not detect empty log."""
+        assert parser.can_parse("") is False
+
+    def test_parse_all_passing(self, parser: TestNGParser) -> None:
+        """Should parse all passing tests."""
+        log = """
+        TestNG test suite
+        Total tests run: 10, Passes: 10, Failures: 0, Skips: 0
+        Total time: 2.5 seconds
+        """
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.framework == "testng"
+        assert result.total == 10
+        assert result.passed == 10
+        assert result.failed == 0
+        assert result.duration_seconds == pytest.approx(2.5)
+
+    def test_parse_with_failures(self, parser: TestNGParser) -> None:
+        """Should parse tests with failures."""
+        log = "TestNG: Total tests run: 10, Failures: 2, Skips: 1"
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.total == 10
+        assert result.failed == 2
+        assert result.skipped == 1
+
+
+class TestMinitestParser:
+    """Test suite for Ruby Minitest log parser."""
+
+    @pytest.fixture
+    def parser(self) -> MinitestParser:
+        """Create parser instance."""
+        return MinitestParser()
+
+    def test_can_parse_minitest_output(self, parser: MinitestParser) -> None:
+        """Should detect Minitest output."""
+        assert parser.can_parse("10 runs, 20 assertions, 0 failures, 0 errors, 0 skips") is True
+
+    def test_cannot_parse_empty(self, parser: MinitestParser) -> None:
+        """Should not detect empty log."""
+        assert parser.can_parse("") is False
+
+    def test_parse_all_passing(self, parser: MinitestParser) -> None:
+        """Should parse all passing tests."""
+        log = """
+        Run options: --seed 12345
+
+        # Running:
+
+        ..........
+
+        Finished in 1.5s, 10.0 runs/s, 20.0 assertions/s.
+
+        10 runs, 20 assertions, 0 failures, 0 errors, 0 skips
+        """
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.framework == "minitest"
+        assert result.total == 10
+        assert result.passed == 10
+        assert result.failed == 0
+        assert result.duration_seconds == pytest.approx(1.5)
+
+    def test_parse_with_failures(self, parser: MinitestParser) -> None:
+        """Should parse tests with failures."""
+        log = "10 runs, 20 assertions, 2 failures, 1 errors, 1 skips"
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.total == 10
+        assert result.failed == 3  # 2 failures + 1 error
+        assert result.skipped == 1
+
+
+class TestPlaywrightParser:
+    """Test suite for Playwright log parser."""
+
+    @pytest.fixture
+    def parser(self) -> PlaywrightParser:
+        """Create parser instance."""
+        return PlaywrightParser()
+
+    def test_can_parse_playwright_output(self, parser: PlaywrightParser) -> None:
+        """Should detect Playwright output."""
+        log = "Running 10 tests using 4 workers\nplaywright test\n10 passed (5s)"
+        assert parser.can_parse(log) is True
+
+    def test_cannot_parse_empty(self, parser: PlaywrightParser) -> None:
+        """Should not detect empty log."""
+        assert parser.can_parse("") is False
+
+    def test_parse_all_passing(self, parser: PlaywrightParser) -> None:
+        """Should parse all passing tests."""
+        log = """
+        Running 10 tests using 4 workers
+        chromium
+          ✓ test1 (500ms)
+          ✓ test2 (600ms)
+        10 passed (5s)
+        """
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.framework == "playwright"
+        assert result.passed == 10
+        assert result.failed == 0
+
+    def test_parse_with_failures(self, parser: PlaywrightParser) -> None:
+        """Should parse tests with failures."""
+        log = "Running 10 tests\nplaywright\n7 passed 2 failed 1 skipped"
+        result = parser.parse(log)
+
+        assert result is not None
+        assert result.passed == 7
+        assert result.failed == 2
+        assert result.skipped == 1

@@ -1,12 +1,13 @@
 """LLM client for error analysis using Claude."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from anthropic import AsyncAnthropic
 
 from app.config import Settings
 from app.core.exceptions import LLMError
+from app.infrastructure.cache.redis_cache import RedisCache
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +59,13 @@ Only respond with valid JSON, no additional text."""
 class ClaudeClient:
     """Client for Claude API for error analysis."""
 
-    def __init__(self, settings: Settings) -> None:
-        """Initialize with settings."""
+    def __init__(self, settings: Settings, cache: RedisCache | None = None) -> None:
+        """Initialize with settings and optional cache."""
         self._api_key = settings.anthropic_api_key
         self._model = settings.claude_model
         self._max_tokens = settings.claude_max_tokens
         self._client: AsyncAnthropic | None = None
+        self._cache = cache
 
     def _get_client(self) -> AsyncAnthropic:
         """Get or create Anthropic client."""
@@ -76,20 +78,37 @@ class ClaudeClient:
         log_content: str,
         framework: str = "unknown",
         job_name: str = "unknown",
+        use_cache: bool = True,
     ) -> ErrorAnalysisResult:
-        """Analyze error log using Claude."""
+        """Analyze error log using Claude with optional caching."""
         import json
+
+        # Check cache first if enabled
+        if use_cache and self._cache:
+            cached = await self._cache.get_analysis(log_content)
+            if cached:
+                logger.info("Returning cached error analysis")
+                return ErrorAnalysisResult(
+                    root_cause=cached.get("root_cause", ""),
+                    error_summary=cached.get("error_summary", ""),
+                    suggested_fixes=cached.get("suggested_fixes", []),
+                    prevention_tips=cached.get("prevention_tips", []),
+                    confidence_score=cached.get("confidence_score", 0.5),
+                    related_documentation=cached.get("related_documentation", []),
+                    tokens_used=cached.get("tokens_used", 0),
+                )
 
         client = self._get_client()
 
         # Truncate log if too long (keep first and last portions)
         max_log_length = 15000
+        truncated_log = log_content
         if len(log_content) > max_log_length:
             half = max_log_length // 2
-            log_content = log_content[:half] + "\n\n... [truncated] ...\n\n" + log_content[-half:]
+            truncated_log = log_content[:half] + "\n\n... [truncated] ...\n\n" + log_content[-half:]
 
         prompt = ERROR_ANALYSIS_PROMPT.format(
-            log_content=log_content,
+            log_content=truncated_log,
             framework=framework,
             job_name=job_name,
         )
@@ -120,7 +139,7 @@ class ClaudeClient:
                         "Failed to parse LLM response as JSON", provider="claude"
                     ) from None
 
-            return ErrorAnalysisResult(
+            analysis_result = ErrorAnalysisResult(
                 root_cause=result.get("root_cause", "Unable to determine"),
                 error_summary=result.get("error_summary", "Error analysis failed"),
                 suggested_fixes=result.get("suggested_fixes", []),
@@ -129,6 +148,12 @@ class ClaudeClient:
                 related_documentation=result.get("related_documentation", []),
                 tokens_used=tokens_used,
             )
+
+            # Cache the result using original log content for hash
+            if self._cache:
+                await self._cache.set_analysis(log_content, asdict(analysis_result))
+
+            return analysis_result
 
         except Exception as e:
             logger.error(f"Claude API error: {e}")
