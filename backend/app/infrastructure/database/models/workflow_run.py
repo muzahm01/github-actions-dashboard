@@ -1,4 +1,5 @@
 """WorkflowRun model."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -20,7 +21,9 @@ class WorkflowRun(Base, TimestampMixin):
 
     __tablename__ = "workflow_runs"
     __table_args__ = (
-        UniqueConstraint("workflow_id", "run_number", "run_attempt", name="uq_workflow_run_attempt"),
+        UniqueConstraint(
+            "workflow_id", "run_number", "run_attempt", name="uq_workflow_run_attempt"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

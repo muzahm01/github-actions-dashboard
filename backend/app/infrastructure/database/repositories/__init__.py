@@ -1,4 +1,5 @@
 """Database repositories."""
+
 from app.infrastructure.database.repositories.base import BaseRepository
 from app.infrastructure.database.repositories.job_repo import JobRepository
 from app.infrastructure.database.repositories.log_repo import LogRepository

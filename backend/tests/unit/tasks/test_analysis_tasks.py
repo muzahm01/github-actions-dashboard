@@ -1,4 +1,5 @@
 """Tests for analysis tasks."""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -87,8 +88,7 @@ class TestBatchGenerateEmbeddingsTask:
         from app.tasks.analysis_tasks import batch_generate_embeddings
 
         assert (
-            batch_generate_embeddings.name
-            == "app.tasks.analysis_tasks.batch_generate_embeddings"
+            batch_generate_embeddings.name == "app.tasks.analysis_tasks.batch_generate_embeddings"
         )
 
 
@@ -99,7 +99,4 @@ class TestSummarizeRunFailuresTask:
         """Test that the task is properly registered."""
         from app.tasks.analysis_tasks import summarize_run_failures
 
-        assert (
-            summarize_run_failures.name
-            == "app.tasks.analysis_tasks.summarize_run_failures"
-        )
+        assert summarize_run_failures.name == "app.tasks.analysis_tasks.summarize_run_failures"

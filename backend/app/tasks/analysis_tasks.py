@@ -1,4 +1,5 @@
 """Celery tasks for error analysis with LLM."""
+
 import asyncio
 import logging
 

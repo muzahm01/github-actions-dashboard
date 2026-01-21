@@ -1,4 +1,5 @@
 """Tests for log repository."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -22,9 +23,7 @@ class TestLogRepository:
         return LogRepository(mock_session)
 
     @pytest.mark.asyncio
-    async def test_get_by_job_id(
-        self, repository: LogRepository, mock_session: AsyncMock
-    ) -> None:
+    async def test_get_by_job_id(self, repository: LogRepository, mock_session: AsyncMock) -> None:
         """Test getting logs by job ID."""
         mock_logs = [MagicMock(job_id=1), MagicMock(job_id=1)]
         mock_result = MagicMock()
@@ -39,9 +38,7 @@ class TestLogRepository:
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_by_hash(
-        self, repository: LogRepository, mock_session: AsyncMock
-    ) -> None:
+    async def test_get_by_hash(self, repository: LogRepository, mock_session: AsyncMock) -> None:
         """Test getting log by hash."""
         mock_log = MagicMock(log_hash="abc123")
         mock_result = MagicMock()

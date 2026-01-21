@@ -1,4 +1,5 @@
 """Tests for LLM client."""
+
 from unittest.mock import MagicMock
 
 import pytest

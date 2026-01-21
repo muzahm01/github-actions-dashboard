@@ -1,4 +1,5 @@
 """SQLAlchemy base model and common utilities."""
+
 from datetime import datetime
 from typing import Any
 

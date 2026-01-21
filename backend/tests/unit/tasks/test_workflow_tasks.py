@@ -1,4 +1,5 @@
 """Tests for workflow tasks."""
+
 from unittest.mock import MagicMock, patch
 
 
@@ -34,9 +35,7 @@ class TestProcessWorkflowRunTask:
         """Test that the task is properly registered."""
         from app.tasks.workflow_tasks import process_workflow_run
 
-        assert (
-            process_workflow_run.name == "app.tasks.workflow_tasks.process_workflow_run"
-        )
+        assert process_workflow_run.name == "app.tasks.workflow_tasks.process_workflow_run"
         assert process_workflow_run.max_retries == 3
 
 
@@ -47,9 +46,7 @@ class TestSyncAllWorkflowsTask:
         """Test that the task is properly registered."""
         from app.tasks.workflow_tasks import sync_all_workflows
 
-        assert (
-            sync_all_workflows.name == "app.tasks.workflow_tasks.sync_all_workflows"
-        )
+        assert sync_all_workflows.name == "app.tasks.workflow_tasks.sync_all_workflows"
 
 
 class TestCleanupOldDataTask:

@@ -1,4 +1,5 @@
 """Multi-framework test result parser."""
+
 from __future__ import annotations
 
 import re
@@ -139,7 +140,12 @@ class PytestParser(BaseParser):
         skipped = skipped + xfailed
 
         # Check if we got any counts - if all zero and no summary line, return None
-        if passed == 0 and failed == 0 and skipped == 0 and not self.SUMMARY_LINE_PATTERN.search(content):
+        if (
+            passed == 0
+            and failed == 0
+            and skipped == 0
+            and not self.SUMMARY_LINE_PATTERN.search(content)
+        ):
             return None
 
         # Extract total from collected
@@ -279,7 +285,9 @@ class MochaParser(BaseParser):
         if not log_content:
             return False
         content = self.preprocess(log_content)
-        return "passing" in content and ("failing" in content or "pending" in content or ")" in content)
+        return "passing" in content and (
+            "failing" in content or "pending" in content or ")" in content
+        )
 
     def parse(self, log_content: str) -> TestResult | None:
         """Parse Mocha output."""

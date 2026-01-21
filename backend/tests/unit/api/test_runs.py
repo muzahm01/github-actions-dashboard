@@ -1,4 +1,5 @@
 """Tests for workflow run endpoints."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,9 +10,7 @@ class TestListRuns:
     """Tests for GET /api/v1/runs/ endpoint."""
 
     @pytest.mark.asyncio
-    async def test_list_runs_success(
-        self, client: AsyncClient, mock_db_session: AsyncMock
-    ) -> None:
+    async def test_list_runs_success(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return list of runs."""
         mock_run1 = MagicMock()
         mock_run1.id = 1
@@ -39,9 +38,7 @@ class TestListRuns:
         mock_run2.html_url = "https://github.com/org/repo/actions/runs/123457"
         mock_run2.workflow_id = 1
 
-        with patch(
-            "app.api.v1.runs.WorkflowRunRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = [mock_run1, mock_run2]
             mock_repo.count.return_value = 2
@@ -58,13 +55,9 @@ class TestListRuns:
         assert data["total"] == 2
 
     @pytest.mark.asyncio
-    async def test_list_runs_empty(
-        self, client: AsyncClient, mock_db_session: AsyncMock
-    ) -> None:
+    async def test_list_runs_empty(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return empty list when no runs exist."""
-        with patch(
-            "app.api.v1.runs.WorkflowRunRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = []
             mock_repo.count.return_value = 0
@@ -82,9 +75,7 @@ class TestListRuns:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should support pagination parameters."""
-        with patch(
-            "app.api.v1.runs.WorkflowRunRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = []
             mock_repo.count.return_value = 50
@@ -113,9 +104,7 @@ class TestListRuns:
         mock_run.html_url = "https://github.com/org/repo/actions/runs/123456"
         mock_run.workflow_id = 1
 
-        with patch(
-            "app.api.v1.runs.WorkflowRunRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_recent_failures.return_value = [mock_run]
             mock_repo_class.return_value = mock_repo
@@ -133,9 +122,7 @@ class TestGetRun:
     """Tests for GET /api/v1/runs/{run_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_run_success(
-        self, client: AsyncClient, mock_db_session: AsyncMock
-    ) -> None:
+    async def test_get_run_success(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return run details with jobs when run exists."""
         mock_run = MagicMock()
         mock_run.id = 1
@@ -160,9 +147,7 @@ class TestGetRun:
         mock_job.conclusion = "success"
         mock_run.jobs = [mock_job]
 
-        with patch(
-            "app.api.v1.runs.WorkflowRunRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_with_jobs.return_value = mock_run
             mock_repo_class.return_value = mock_repo
@@ -179,13 +164,9 @@ class TestGetRun:
         assert data["jobs"][0]["name"] == "build"
 
     @pytest.mark.asyncio
-    async def test_get_run_not_found(
-        self, client: AsyncClient, mock_db_session: AsyncMock
-    ) -> None:
+    async def test_get_run_not_found(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return 404 when run does not exist."""
-        with patch(
-            "app.api.v1.runs.WorkflowRunRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_with_jobs.return_value = None
             mock_repo_class.return_value = mock_repo

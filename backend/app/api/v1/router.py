@@ -1,4 +1,5 @@
 """API v1 router aggregator."""
+
 from fastapi import APIRouter
 
 from app.api.v1 import analysis, health, jobs, metrics, runs, search, webhooks, workflows

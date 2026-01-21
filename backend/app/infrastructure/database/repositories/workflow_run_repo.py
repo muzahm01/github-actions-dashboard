@@ -1,4 +1,5 @@
 """Repository for workflow runs."""
+
 from datetime import datetime
 
 from sqlalchemy import desc, select
@@ -22,9 +23,7 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_workflow_id(
-        self, workflow_id: int, limit: int = 50
-    ) -> list[WorkflowRun]:
+    async def get_by_workflow_id(self, workflow_id: int, limit: int = 50) -> list[WorkflowRun]:
         """Get runs for a workflow, ordered by most recent."""
         stmt = (
             select(WorkflowRun)
@@ -70,9 +69,7 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_runs_in_timerange(
-        self, start: datetime, end: datetime
-    ) -> list[WorkflowRun]:
+    async def get_runs_in_timerange(self, start: datetime, end: datetime) -> list[WorkflowRun]:
         """Get runs within a time range."""
         stmt = (
             select(WorkflowRun)

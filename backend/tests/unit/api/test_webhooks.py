@@ -1,4 +1,5 @@
 """Tests for webhook endpoints."""
+
 import hashlib
 import hmac
 import json

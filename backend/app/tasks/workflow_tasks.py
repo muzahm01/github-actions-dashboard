@@ -1,4 +1,5 @@
 """Celery tasks for workflow synchronization."""
+
 import asyncio
 import hashlib
 import logging

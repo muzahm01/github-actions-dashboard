@@ -1,4 +1,5 @@
 """Tests for analysis endpoints."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -161,9 +162,7 @@ class TestFindSimilarErrors:
         with patch("app.api.v1.analysis.LogRepository") as mock_log_repo_class:
             mock_log_repo = AsyncMock()
             mock_log_repo.get_by_id.return_value = mock_log
-            mock_log_repo.find_similar_by_embedding.return_value = [
-                (mock_similar_log, 0.85)
-            ]
+            mock_log_repo.find_similar_by_embedding.return_value = [(mock_similar_log, 0.85)]
             mock_log_repo_class.return_value = mock_log_repo
 
             response = await client.post(

@@ -1,4 +1,5 @@
 """LLM client for error analysis using Claude."""
+
 import logging
 from dataclasses import dataclass
 
@@ -85,11 +86,7 @@ class ClaudeClient:
         max_log_length = 15000
         if len(log_content) > max_log_length:
             half = max_log_length // 2
-            log_content = (
-                log_content[:half]
-                + "\n\n... [truncated] ...\n\n"
-                + log_content[-half:]
-            )
+            log_content = log_content[:half] + "\n\n... [truncated] ...\n\n" + log_content[-half:]
 
         prompt = ERROR_ANALYSIS_PROMPT.format(
             log_content=log_content,
@@ -119,7 +116,9 @@ class ClaudeClient:
                 if json_match:
                     result = json.loads(json_match.group())
                 else:
-                    raise LLMError("Failed to parse LLM response as JSON", provider="claude") from None
+                    raise LLMError(
+                        "Failed to parse LLM response as JSON", provider="claude"
+                    ) from None
 
             return ErrorAnalysisResult(
                 root_cause=result.get("root_cause", "Unable to determine"),
@@ -135,9 +134,7 @@ class ClaudeClient:
             logger.error(f"Claude API error: {e}")
             raise LLMError(f"Claude API error: {e}", provider="claude") from e
 
-    async def summarize_failures(
-        self, failures: list[dict], max_failures: int = 10
-    ) -> str:
+    async def summarize_failures(self, failures: list[dict], max_failures: int = 10) -> str:
         """Summarize multiple test failures."""
         client = self._get_client()
 

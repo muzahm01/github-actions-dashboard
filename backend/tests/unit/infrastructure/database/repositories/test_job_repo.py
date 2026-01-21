@@ -1,4 +1,5 @@
 """Tests for job repository."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -36,9 +37,7 @@ class TestJobRepository:
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_by_run_id(
-        self, repository: JobRepository, mock_session: AsyncMock
-    ) -> None:
+    async def test_get_by_run_id(self, repository: JobRepository, mock_session: AsyncMock) -> None:
         """Test getting jobs by workflow run ID."""
         mock_jobs = [MagicMock(run_id=1), MagicMock(run_id=1)]
         mock_result = MagicMock()
@@ -70,9 +69,7 @@ class TestJobRepository:
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_with_steps(
-        self, repository: JobRepository, mock_session: AsyncMock
-    ) -> None:
+    async def test_get_with_steps(self, repository: JobRepository, mock_session: AsyncMock) -> None:
         """Test getting job with steps."""
         mock_job = MagicMock(id=1, steps=[])
         mock_result = MagicMock()
@@ -84,9 +81,7 @@ class TestJobRepository:
         assert result is not None
 
     @pytest.mark.asyncio
-    async def test_get_with_logs(
-        self, repository: JobRepository, mock_session: AsyncMock
-    ) -> None:
+    async def test_get_with_logs(self, repository: JobRepository, mock_session: AsyncMock) -> None:
         """Test getting job with logs."""
         mock_job = MagicMock(id=1, logs=[])
         mock_result = MagicMock()
