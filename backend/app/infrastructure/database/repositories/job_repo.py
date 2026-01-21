@@ -1,4 +1,5 @@
 """Repository for jobs."""
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -28,31 +29,19 @@ class JobRepository(BaseRepository[Job]):
 
     async def get_failed_jobs(self, run_id: int) -> list[Job]:
         """Get failed jobs for a run."""
-        stmt = (
-            select(Job)
-            .where(Job.run_id == run_id)
-            .where(Job.conclusion == "failure")
-        )
+        stmt = select(Job).where(Job.run_id == run_id).where(Job.conclusion == "failure")
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_with_steps(self, job_id: int) -> Job | None:
         """Get job with steps eagerly loaded."""
-        stmt = (
-            select(Job)
-            .where(Job.id == job_id)
-            .options(selectinload(Job.steps))
-        )
+        stmt = select(Job).where(Job.id == job_id).options(selectinload(Job.steps))
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_with_logs(self, job_id: int) -> Job | None:
         """Get job with logs eagerly loaded."""
-        stmt = (
-            select(Job)
-            .where(Job.id == job_id)
-            .options(selectinload(Job.logs))
-        )
+        stmt = select(Job).where(Job.id == job_id).options(selectinload(Job.logs))
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 

@@ -1,4 +1,5 @@
 """OpenAI embedding client for vector search."""
+
 import logging
 
 from openai import AsyncOpenAI

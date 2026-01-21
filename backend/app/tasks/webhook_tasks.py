@@ -1,4 +1,5 @@
 """Celery tasks for webhook event processing."""
+
 import asyncio
 import logging
 from dataclasses import dataclass

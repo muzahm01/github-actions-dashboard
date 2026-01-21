@@ -1,4 +1,5 @@
 """Tests for repository repository."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

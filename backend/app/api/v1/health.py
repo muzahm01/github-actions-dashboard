@@ -1,4 +1,5 @@
 """Health check endpoints."""
+
 import logging
 from typing import Annotated
 

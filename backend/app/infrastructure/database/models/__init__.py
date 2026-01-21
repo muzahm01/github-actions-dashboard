@@ -1,4 +1,5 @@
 """Database models."""
+
 from app.infrastructure.database.models.artifact import Artifact
 from app.infrastructure.database.models.base import Base, TimestampMixin
 from app.infrastructure.database.models.error_analysis import ErrorAnalysis

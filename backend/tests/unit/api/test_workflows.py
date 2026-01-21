@@ -1,4 +1,5 @@
 """Tests for workflow endpoints."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -29,9 +30,7 @@ class TestListWorkflows:
         mock_workflow2.state = "active"
         mock_workflow2.repo_id = 1
 
-        with patch(
-            "app.api.v1.workflows.WorkflowRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.workflows.WorkflowRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = [mock_workflow1, mock_workflow2]
             mock_repo.count.return_value = 2
@@ -52,9 +51,7 @@ class TestListWorkflows:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return empty list when no workflows exist."""
-        with patch(
-            "app.api.v1.workflows.WorkflowRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.workflows.WorkflowRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = []
             mock_repo.count.return_value = 0
@@ -80,9 +77,7 @@ class TestListWorkflows:
         mock_workflow.state = "active"
         mock_workflow.repo_id = 1
 
-        with patch(
-            "app.api.v1.workflows.WorkflowRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.workflows.WorkflowRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = [mock_workflow]
             mock_repo.count.return_value = 10
@@ -110,9 +105,7 @@ class TestGetWorkflow:
         mock_workflow.state = "active"
         mock_workflow.repo_id = 1
 
-        with patch(
-            "app.api.v1.workflows.WorkflowRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.workflows.WorkflowRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_workflow
             mock_repo_class.return_value = mock_repo
@@ -130,9 +123,7 @@ class TestGetWorkflow:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return 404 when workflow does not exist."""
-        with patch(
-            "app.api.v1.workflows.WorkflowRepository"
-        ) as mock_repo_class:
+        with patch("app.api.v1.workflows.WorkflowRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo

@@ -1,4 +1,5 @@
 """Tests for job endpoints."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,9 +10,7 @@ class TestGetJob:
     """Tests for GET /api/v1/jobs/{job_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_job_success(
-        self, client: AsyncClient, mock_db_session: AsyncMock
-    ) -> None:
+    async def test_get_job_success(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return job details when job exists."""
         mock_job = MagicMock()
         mock_job.id = 1
@@ -39,9 +38,7 @@ class TestGetJob:
         assert data["conclusion"] == "success"
 
     @pytest.mark.asyncio
-    async def test_get_job_not_found(
-        self, client: AsyncClient, mock_db_session: AsyncMock
-    ) -> None:
+    async def test_get_job_not_found(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return 404 when job does not exist."""
         with patch("app.api.v1.jobs.JobRepository") as mock_repo_class:
             mock_repo = AsyncMock()

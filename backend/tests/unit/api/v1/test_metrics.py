@@ -1,4 +1,5 @@
 """Tests for metrics endpoint."""
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -18,9 +19,7 @@ class TestMetricsEndpoint:
         )
 
     @pytest.mark.asyncio
-    async def test_metrics_endpoint_returns_prometheus_format(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_metrics_endpoint_returns_prometheus_format(self, client: AsyncClient) -> None:
         """Test metrics endpoint returns Prometheus format."""
         async with client:
             response = await client.get("/api/v1/metrics")

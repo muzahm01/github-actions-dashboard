@@ -1,4 +1,5 @@
 """Repository for error analyses."""
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,11 +22,7 @@ class ErrorAnalysisRepository(BaseRepository[ErrorAnalysis]):
 
     async def get_recent(self, limit: int = 20) -> list[ErrorAnalysis]:
         """Get recent analyses ordered by creation date."""
-        stmt = (
-            select(ErrorAnalysis)
-            .order_by(ErrorAnalysis.created_at.desc())
-            .limit(limit)
-        )
+        stmt = select(ErrorAnalysis).order_by(ErrorAnalysis.created_at.desc()).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

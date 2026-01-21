@@ -1,4 +1,5 @@
 """Search endpoints."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -61,7 +62,9 @@ async def semantic_search(
                 "job_id": log.job_id,
                 "similarity_score": round(score, 3),
                 "category": log.category,
-                "preview": (log.log_content[:200] + "...") if log.log_content and len(log.log_content) > 200 else log.log_content,
+                "preview": (log.log_content[:200] + "...")
+                if log.log_content and len(log.log_content) > 200
+                else log.log_content,
             }
             for log, score in similar_logs
         ],
@@ -92,7 +95,9 @@ async def text_search(
                 "log_id": log.id,
                 "job_id": log.job_id,
                 "category": log.category,
-                "preview": (log.log_content[:200] + "...") if log.log_content and len(log.log_content) > 200 else log.log_content,
+                "preview": (log.log_content[:200] + "...")
+                if log.log_content and len(log.log_content) > 200
+                else log.log_content,
             }
             for log in logs
         ],

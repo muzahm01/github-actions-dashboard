@@ -1,4 +1,5 @@
 """GitHub webhook endpoints."""
+
 import json
 import logging
 from typing import Annotated

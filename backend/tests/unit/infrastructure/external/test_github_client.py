@@ -1,4 +1,5 @@
 """Tests for GitHub API client."""
+
 from datetime import UTC
 from unittest.mock import MagicMock
 

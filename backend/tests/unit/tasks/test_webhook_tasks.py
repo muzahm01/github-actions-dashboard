@@ -1,4 +1,5 @@
 """Tests for webhook processing Celery tasks."""
+
 from unittest.mock import MagicMock, patch
 
 from app.tasks.webhook_tasks import (
@@ -16,9 +17,7 @@ class TestProcessWebhookEventTask:
         assert process_webhook_event.max_retries == 3
 
     @patch("app.tasks.webhook_tasks.run_async")
-    def test_process_workflow_run_completed_event(
-        self, mock_run_async: MagicMock
-    ) -> None:
+    def test_process_workflow_run_completed_event(self, mock_run_async: MagicMock) -> None:
         """Should process workflow_run completed event and trigger run processing."""
         payload = {
             "action": "completed",
@@ -51,9 +50,7 @@ class TestProcessWebhookEventTask:
         assert result["event_type"] == "workflow_run"
 
     @patch("app.tasks.webhook_tasks.run_async")
-    def test_process_workflow_run_in_progress_event(
-        self, mock_run_async: MagicMock
-    ) -> None:
+    def test_process_workflow_run_in_progress_event(self, mock_run_async: MagicMock) -> None:
         """Should skip processing for in_progress workflow_run events."""
         payload = {
             "action": "in_progress",

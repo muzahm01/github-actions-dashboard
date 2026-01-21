@@ -1,4 +1,5 @@
 """Prometheus metrics endpoint."""
+
 import logging
 import time
 from collections.abc import Callable
@@ -149,9 +150,7 @@ def track_request_metrics(func: Callable[..., Any]) -> Callable[..., Any]:
         try:
             response = await func(request, *args, **kwargs)
             status_code = getattr(response, "status_code", 200)
-            REQUEST_COUNT.labels(
-                method=method, endpoint=endpoint, status_code=status_code
-            ).inc()
+            REQUEST_COUNT.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
             return response
         except Exception:
             REQUEST_COUNT.labels(method=method, endpoint=endpoint, status_code=500).inc()
@@ -175,9 +174,7 @@ def record_webhook_processing_time(event_type: str, duration: float) -> None:
 
 def record_workflow_run(repository: str, workflow: str, conclusion: str) -> None:
     """Record a workflow run."""
-    WORKFLOW_RUNS.labels(
-        repository=repository, workflow=workflow, conclusion=conclusion
-    ).inc()
+    WORKFLOW_RUNS.labels(repository=repository, workflow=workflow, conclusion=conclusion).inc()
 
 
 def record_failed_job(repository: str, job_name: str) -> None:

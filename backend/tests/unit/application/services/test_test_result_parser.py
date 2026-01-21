@@ -1,4 +1,5 @@
 """Tests for test result parser service."""
+
 import pytest
 
 from app.application.services.test_result_parser import (
@@ -276,9 +277,7 @@ class TestTestResultParserService:
         assert result is not None
         assert result.framework == "go-test"
 
-    def test_returns_none_for_unrecognized_output(
-        self, service: TestResultParserService
-    ) -> None:
+    def test_returns_none_for_unrecognized_output(self, service: TestResultParserService) -> None:
         """Should return None for unrecognized output."""
         log = "Build successful\nDeploying..."
         result = service.parse(log)
@@ -546,7 +545,12 @@ class TestDotNetParser:
 
     def test_can_parse_dotnet_passed_output(self, parser: DotNetParser) -> None:
         """Should detect .NET passed output."""
-        assert parser.can_parse("Passed!  -  Failed:     0, Passed:    10, Skipped:     0, Total:    10") is True
+        assert (
+            parser.can_parse(
+                "Passed!  -  Failed:     0, Passed:    10, Skipped:     0, Total:    10"
+            )
+            is True
+        )
 
     def test_cannot_parse_empty(self, parser: DotNetParser) -> None:
         """Should not detect empty log."""

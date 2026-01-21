@@ -1,4 +1,5 @@
 """Tests for webhook processor service."""
+
 import hashlib
 import hmac
 from unittest.mock import AsyncMock
@@ -154,9 +155,7 @@ class TestWebhookProcessor:
         idempotency_store.mark_processed.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_process_invalid_signature_raises(
-        self, processor: WebhookProcessor
-    ) -> None:
+    async def test_process_invalid_signature_raises(self, processor: WebhookProcessor) -> None:
         """Should raise error for invalid signature."""
         payload = b'{"action": "completed"}'
         invalid_signature = "sha256=invalid"

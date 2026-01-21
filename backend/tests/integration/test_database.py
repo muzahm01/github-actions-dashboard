@@ -1,4 +1,5 @@
 """Integration tests for database operations using testcontainers."""
+
 import asyncio
 import uuid
 
@@ -21,6 +22,7 @@ def event_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
 
 # Imports below must come after pytest.importorskip to properly skip tests
 # ruff: noqa: E402, I001
@@ -79,9 +81,7 @@ async def db_engine(database_url: str):
 @pytest_asyncio.fixture
 async def db_session(db_engine) -> AsyncSession:
     """Create async database session."""
-    async_session = async_sessionmaker(
-        db_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
         await session.rollback()
@@ -130,9 +130,7 @@ class TestRepositoryRepository:
         assert created.github_id == gid
         assert created.name == "new-repo"
 
-    async def test_get_by_id(
-        self, repo: RepositoryRepository, sample_repository: Repository
-    ):
+    async def test_get_by_id(self, repo: RepositoryRepository, sample_repository: Repository):
         """Should get repository by ID."""
         result = await repo.get_by_id(sample_repository.id)
 
@@ -315,9 +313,7 @@ class TestJobRepository:
         return run
 
     @pytest_asyncio.fixture
-    async def sample_jobs(
-        self, db_session: AsyncSession, sample_run: WorkflowRun
-    ) -> list[Job]:
+    async def sample_jobs(self, db_session: AsyncSession, sample_run: WorkflowRun) -> list[Job]:
         """Create sample jobs."""
         jobs = []
         base_id = unique_id()

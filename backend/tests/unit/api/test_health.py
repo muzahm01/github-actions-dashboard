@@ -1,4 +1,5 @@
 """Tests for health endpoints."""
+
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -16,9 +17,7 @@ async def test_health_check(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_readiness_check_all_healthy(
-    client: AsyncClient, mock_db_session: AsyncMock
-) -> None:
+async def test_readiness_check_all_healthy(client: AsyncClient, mock_db_session: AsyncMock) -> None:
     """Should return ready status when all dependencies are healthy."""
     # Mock successful database query
     mock_db_session.execute = AsyncMock()

@@ -1,4 +1,5 @@
 """Tests for embedding client."""
+
 from unittest.mock import MagicMock
 
 import pytest

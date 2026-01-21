@@ -1,4 +1,5 @@
 """Repository for logs with vector search capabilities."""
+
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,21 +28,13 @@ class LogRepository(BaseRepository[Log]):
 
     async def get_logs_with_errors(self, limit: int = 50) -> list[Log]:
         """Get logs that have error content."""
-        stmt = (
-            select(Log)
-            .where(Log.error_content.isnot(None))
-            .limit(limit)
-        )
+        stmt = select(Log).where(Log.error_content.isnot(None)).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_by_category(self, category: str, limit: int = 50) -> list[Log]:
         """Get logs by error category."""
-        stmt = (
-            select(Log)
-            .where(Log.category == category)
-            .limit(limit)
-        )
+        stmt = select(Log).where(Log.category == category).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -87,11 +80,7 @@ class LogRepository(BaseRepository[Log]):
     async def search_by_content(self, query: str, limit: int = 20) -> list[Log]:
         """Full-text search in log content."""
         # Simple ILIKE search - can be upgraded to full-text search later
-        stmt = (
-            select(Log)
-            .where(Log.log_content.ilike(f"%{query}%"))
-            .limit(limit)
-        )
+        stmt = select(Log).where(Log.log_content.ilike(f"%{query}%")).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

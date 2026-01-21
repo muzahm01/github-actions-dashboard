@@ -1,4 +1,5 @@
 """GitHub API client for fetching workflow data."""
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -224,9 +225,7 @@ class GitHubClient:
 
         return runs
 
-    async def get_workflow_run(
-        self, owner: str, repo: str, run_id: int
-    ) -> GitHubWorkflowRun:
+    async def get_workflow_run(self, owner: str, repo: str, run_id: int) -> GitHubWorkflowRun:
         """Get a specific workflow run."""
         r = await self._request("GET", f"/repos/{owner}/{repo}/actions/runs/{run_id}")
         return GitHubWorkflowRun(
@@ -250,13 +249,9 @@ class GitHubClient:
             ),
         )
 
-    async def list_jobs_for_run(
-        self, owner: str, repo: str, run_id: int
-    ) -> list[GitHubJob]:
+    async def list_jobs_for_run(self, owner: str, repo: str, run_id: int) -> list[GitHubJob]:
         """List jobs for a workflow run."""
-        data = await self._request(
-            "GET", f"/repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
-        )
+        data = await self._request("GET", f"/repos/{owner}/{repo}/actions/runs/{run_id}/jobs")
         jobs = []
 
         for j in data.get("jobs", []):
@@ -300,18 +295,12 @@ class GitHubClient:
                 # Logs expired
                 logger.warning(f"Logs expired for job {job_id}")
                 return ""
-            raise GitHubAPIError(
-                f"Failed to download logs: {e.response.status_code}"
-            ) from e
+            raise GitHubAPIError(f"Failed to download logs: {e.response.status_code}") from e
 
     async def rerun_workflow(self, owner: str, repo: str, run_id: int) -> None:
         """Rerun a workflow."""
-        await self._request(
-            "POST", f"/repos/{owner}/{repo}/actions/runs/{run_id}/rerun"
-        )
+        await self._request("POST", f"/repos/{owner}/{repo}/actions/runs/{run_id}/rerun")
 
     async def cancel_workflow_run(self, owner: str, repo: str, run_id: int) -> None:
         """Cancel a workflow run."""
-        await self._request(
-            "POST", f"/repos/{owner}/{repo}/actions/runs/{run_id}/cancel"
-        )
+        await self._request("POST", f"/repos/{owner}/{repo}/actions/runs/{run_id}/cancel")
