@@ -102,3 +102,96 @@ class TestRedisCache:
         with patch.object(redis_cache, "_get_client", side_effect=Exception("Error")):
             result = await redis_cache.delete("test_key")
             assert result is False
+
+    @pytest.mark.asyncio
+    async def test_get_returns_parsed_json(self, redis_cache: RedisCache) -> None:
+        """Should return parsed JSON when value exists."""
+        mock_client = AsyncMock()
+        mock_client.get.return_value = '{"key": "value"}'
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.get("test_key")
+            assert result == {"key": "value"}
+
+    @pytest.mark.asyncio
+    async def test_get_returns_none_when_key_missing(self, redis_cache: RedisCache) -> None:
+        """Should return None when key doesn't exist."""
+        mock_client = AsyncMock()
+        mock_client.get.return_value = None
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.get("missing_key")
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_set_serializes_and_stores(self, redis_cache: RedisCache) -> None:
+        """Should serialize and store value."""
+        mock_client = AsyncMock()
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.set("test_key", {"data": "value"}, ttl=3600)
+            assert result is True
+            mock_client.set.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_success(self, redis_cache: RedisCache) -> None:
+        """Should delete key successfully."""
+        mock_client = AsyncMock()
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.delete("test_key")
+            assert result is True
+            mock_client.delete.assert_called_once_with("test_key")
+
+    @pytest.mark.asyncio
+    async def test_exists_returns_true(self, redis_cache: RedisCache) -> None:
+        """Should return True when key exists."""
+        mock_client = AsyncMock()
+        mock_client.exists.return_value = 1
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.exists("test_key")
+            assert result is True
+
+    @pytest.mark.asyncio
+    async def test_exists_returns_false_when_missing(self, redis_cache: RedisCache) -> None:
+        """Should return False when key doesn't exist."""
+        mock_client = AsyncMock()
+        mock_client.exists.return_value = 0
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.exists("missing_key")
+            assert result is False
+
+    @pytest.mark.asyncio
+    async def test_get_analysis_by_hash(self, redis_cache: RedisCache) -> None:
+        """Should get analysis by pre-computed hash."""
+        mock_client = AsyncMock()
+        mock_client.get.return_value = '{"root_cause": "test"}'
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.get_analysis_by_hash("abc123")
+            assert result == {"root_cause": "test"}
+            mock_client.get.assert_called_once_with("analysis:abc123")
+
+    @pytest.mark.asyncio
+    async def test_set_analysis_by_hash(self, redis_cache: RedisCache) -> None:
+        """Should set analysis by pre-computed hash."""
+        mock_client = AsyncMock()
+
+        with patch.object(redis_cache, "_get_client", return_value=mock_client):
+            result = await redis_cache.set_analysis_by_hash(
+                "abc123", {"root_cause": "test"}, ttl=3600
+            )
+            assert result is True
+
+    @pytest.mark.asyncio
+    async def test_close(self, redis_cache: RedisCache) -> None:
+        """Should close Redis connection."""
+        mock_client = AsyncMock()
+        redis_cache._client = mock_client
+
+        await redis_cache.close()
+
+        mock_client.close.assert_called_once()
+        assert redis_cache._client is None
