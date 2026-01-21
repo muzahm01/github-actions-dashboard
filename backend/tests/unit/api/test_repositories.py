@@ -1,7 +1,5 @@
 """Tests for repositories API endpoints."""
 
-import pytest
-
 from app.api.v1.repositories import router
 
 

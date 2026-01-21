@@ -1,7 +1,5 @@
 """Tests for dashboard API endpoints."""
 
-import pytest
-
 from app.api.v1.dashboard import router
 
 

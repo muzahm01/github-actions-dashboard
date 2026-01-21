@@ -1,7 +1,8 @@
 """Tests for Redis cache."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.config import Settings
 from app.infrastructure.cache.redis_cache import RedisCache
