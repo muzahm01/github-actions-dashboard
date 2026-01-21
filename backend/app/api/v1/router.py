@@ -2,12 +2,25 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import analysis, health, jobs, metrics, runs, search, webhooks, workflows
+from app.api.v1 import (
+    analysis,
+    dashboard,
+    health,
+    jobs,
+    metrics,
+    repositories,
+    runs,
+    search,
+    webhooks,
+    workflows,
+)
 
 api_router = APIRouter()
 
 api_router.include_router(health.router, tags=["Health"])
 api_router.include_router(metrics.router, tags=["Metrics"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+api_router.include_router(repositories.router, prefix="/repositories", tags=["Repositories"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
 api_router.include_router(workflows.router, prefix="/workflows", tags=["Workflows"])
 api_router.include_router(runs.router, prefix="/runs", tags=["Runs"])

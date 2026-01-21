@@ -176,3 +176,71 @@ class TestGetRun:
         assert response.status_code == 404
         data = response.json()
         assert "not found" in data["detail"].lower()
+
+
+class TestGetRecentFailures:
+    """Tests for GET /api/v1/runs/failures endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_returns_failed_runs(
+        self, client: AsyncClient, mock_db_session: AsyncMock
+    ) -> None:
+        """Should return list of recent failed runs."""
+        mock_run = MagicMock()
+        mock_run.id = 1
+        mock_run.github_id = 123456
+        mock_run.run_number = 42
+        mock_run.status = "completed"
+        mock_run.conclusion = "failure"
+        mock_run.head_branch = "main"
+        mock_run.head_sha = "abc123"
+        mock_run.event = "push"
+        mock_run.actor = "testuser"
+        mock_run.html_url = "https://github.com/org/repo/actions/runs/123456"
+        mock_run.workflow_id = 1
+        mock_run.run_started_at = None
+        mock_run.duration_seconds = 120
+
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+            mock_repo = AsyncMock()
+            mock_repo.get_recent_failures.return_value = [mock_run]
+            mock_repo_class.return_value = mock_repo
+
+            response = await client.get("/api/v1/runs/failures")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["conclusion"] == "failure"
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list(
+        self, client: AsyncClient, mock_db_session: AsyncMock
+    ) -> None:
+        """Should return empty list when no failures."""
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+            mock_repo = AsyncMock()
+            mock_repo.get_recent_failures.return_value = []
+            mock_repo_class.return_value = mock_repo
+
+            response = await client.get("/api/v1/runs/failures")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data == []
+
+    @pytest.mark.asyncio
+    async def test_respects_limit_parameter(
+        self, client: AsyncClient, mock_db_session: AsyncMock
+    ) -> None:
+        """Should respect the limit parameter."""
+        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+            mock_repo = AsyncMock()
+            mock_repo.get_recent_failures.return_value = []
+            mock_repo_class.return_value = mock_repo
+
+            response = await client.get("/api/v1/runs/failures?limit=5")
+
+        assert response.status_code == 200
+        mock_repo.get_recent_failures.assert_called_once_with(limit=5)
