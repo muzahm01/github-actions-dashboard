@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
     from app.infrastructure.database.session import close_db, init_db
+    from app.infrastructure.websocket.pubsub import pubsub_manager
 
     setup_logging(settings.log_level)
     logger.info(
@@ -34,9 +35,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         except Exception as e:
             logger.warning(f"Database initialization skipped: {e}")
 
+    # Start WebSocket pub/sub listener
+    try:
+        await pubsub_manager.connect()
+        logger.info("WebSocket pub/sub listener started")
+    except Exception as e:
+        logger.warning(f"WebSocket pub/sub initialization skipped: {e}")
+
     yield
 
     # Cleanup
+    await pubsub_manager.disconnect()
     await close_db()
     logger.info("Shutting down GitHub Actions Dashboard")
 
