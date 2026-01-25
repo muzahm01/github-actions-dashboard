@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+from contextlib import suppress
 from typing import Any
 
 import redis.asyncio as aioredis
@@ -27,17 +28,18 @@ class WebSocketPubSub:
     async def connect(self) -> None:
         """Connect to Redis and subscribe to broadcast channel."""
         try:
-            self.redis_client = aioredis.from_url(
+            self.redis_client = aioredis.from_url(  # type: ignore[no-untyped-call]
                 str(settings.redis_url),
                 encoding="utf-8",
                 decode_responses=True,
             )
-            self.pubsub = self.redis_client.pubsub()
-            await self.pubsub.subscribe(self.CHANNEL)
-            logger.info(f"Subscribed to Redis channel: {self.CHANNEL}")
+            if self.redis_client:
+                self.pubsub = self.redis_client.pubsub()
+                await self.pubsub.subscribe(self.CHANNEL)
+                logger.info(f"Subscribed to Redis channel: {self.CHANNEL}")
 
-            # Start listening task
-            self.listening_task = asyncio.create_task(self._listen())
+                # Start listening task
+                self.listening_task = asyncio.create_task(self._listen())
         except Exception as e:
             logger.error(f"Failed to connect to Redis pub/sub: {e}")
 
@@ -45,10 +47,8 @@ class WebSocketPubSub:
         """Disconnect from Redis."""
         if self.listening_task:
             self.listening_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self.listening_task
-            except asyncio.CancelledError:
-                pass
 
         if self.pubsub:
             await self.pubsub.unsubscribe(self.CHANNEL)
@@ -95,7 +95,7 @@ def publish_workflow_run_update(
     import redis
 
     try:
-        r = redis.from_url(str(settings.redis_url))
+        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
         message = {
             "type": "workflow_run_update",
             "run_id": run_id,
@@ -120,7 +120,7 @@ def publish_job_update(
     import redis
 
     try:
-        r = redis.from_url(str(settings.redis_url))
+        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
         message = {
             "type": "job_update",
             "job_id": job_id,
@@ -144,7 +144,7 @@ def publish_analysis_complete(
     import redis
 
     try:
-        r = redis.from_url(str(settings.redis_url))
+        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
         message = {
             "type": "analysis_complete",
             "log_id": log_id,
