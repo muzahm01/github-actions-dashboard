@@ -58,7 +58,22 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create .env file
-        run: cp .env.example .env
+        run: |
+          cat > .env << EOF
+          ENVIRONMENT=testing
+          DEBUG=false
+          LOG_LEVEL=INFO
+          POSTGRES_USER=gha
+          POSTGRES_PASSWORD=gha_secret
+          POSTGRES_DB=github_actions
+          REDIS_URL=redis://redis:6379/0
+          GITHUB_TOKEN=test_token
+          GITHUB_WEBHOOK_SECRET=test_secret
+          GITHUB_ORG=test_org
+          ANTHROPIC_API_KEY=test_key
+          OPENAI_API_KEY=test_key
+          SECRET_KEY=test_secret_key
+          EOF
 
       - name: Start services
         run: docker-compose up -d postgres redis
