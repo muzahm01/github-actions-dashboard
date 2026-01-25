@@ -43,7 +43,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -79,15 +79,15 @@ jobs:
           EOF
 
       - name: Start services
-        run: docker-compose up -d postgres redis
+        run: docker compose up -d postgres redis
 
       - name: Wait for services
         run: |
-          timeout 60 bash -c 'until docker-compose exec -T postgres pg_isready -U gha; do sleep 2; done'
-          timeout 60 bash -c 'until docker-compose exec -T redis redis-cli ping; do sleep 2; done'
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U gha; do sleep 2; done'
+          timeout 60 bash -c 'until docker compose exec -T redis redis-cli ping; do sleep 2; done'
 
       - name: Build and start API
-        run: docker-compose up -d api
+        run: docker compose up -d api
 
       - name: Wait for API
         run: |
@@ -100,8 +100,8 @@ jobs:
 
       - name: Show logs on failure
         if: failure()
-        run: docker-compose logs
+        run: docker compose logs
 
       - name: Cleanup
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
