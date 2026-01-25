@@ -42,14 +42,14 @@ jobs:
           EOF
 
       - name: Start services
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Wait for services
         run: |
           timeout 120 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
 
       - name: Run migrations
-        run: docker-compose exec -T api uv run alembic upgrade head
+        run: docker compose exec -T api uv run alembic upgrade head
 
       - name: Install test dependencies
         working-directory: ./backend
@@ -74,11 +74,11 @@ jobs:
 
       - name: Show logs on failure
         if: failure()
-        run: docker-compose logs
+        run: docker compose logs
 
       - name: Cleanup
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
   # Report self-monitoring results (when scheduled)
   report-health:
