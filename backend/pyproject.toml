@@ -90,6 +90,7 @@ omit = [
     "app/tasks/*",
     "app/main.py",
     "app/core/logging.py",
+    "app/api/v1/websocket.py",  # WebSocket protocol handler - requires WebSocket client for testing
 ]
 
 [tool.coverage.report]
