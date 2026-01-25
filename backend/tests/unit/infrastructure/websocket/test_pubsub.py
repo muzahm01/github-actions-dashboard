@@ -41,8 +41,8 @@ async def test_connect_handles_error_gracefully(pubsub_manager):
         # Should not raise
         await pubsub_manager.connect()
 
-        # Should not have set clients
-        assert pubsub_manager.redis_client is None or True  # May or may not be set
+        # Should not have set clients (error occurred, so redis_client should be None)
+        assert pubsub_manager.redis_client is None
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 """Tests for WebSocket connection manager."""
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from app.infrastructure.websocket.manager import ConnectionManager
 
