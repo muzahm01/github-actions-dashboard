@@ -1,4 +1,5 @@
 """Tests for WebSocket API endpoint."""
+
 import pytest
 from fastapi.testclient import TestClient
 

@@ -1,4 +1,5 @@
 """WebSocket infrastructure for real-time updates."""
+
 from app.infrastructure.websocket.manager import ConnectionManager, connection_manager
 from app.infrastructure.websocket.pubsub import (
     WebSocketPubSub,

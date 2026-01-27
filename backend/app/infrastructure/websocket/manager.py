@@ -1,4 +1,5 @@
 """WebSocket connection manager for real-time updates."""
+
 import logging
 from typing import Any
 

@@ -108,6 +108,18 @@ def create_app() -> FastAPI:
         """Liveness probe."""
         return {"status": "alive"}
 
+    # Prometheus metrics endpoint at root level for standard scraping
+    from fastapi.responses import Response
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+    @app.get("/metrics", tags=["Metrics"])
+    async def metrics() -> Response:
+        """Expose Prometheus metrics."""
+        return Response(
+            content=generate_latest(),
+            media_type=CONTENT_TYPE_LATEST,
+        )
+
     # Include API router
     from app.api.v1.router import api_router
 

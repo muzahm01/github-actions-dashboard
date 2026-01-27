@@ -1,4 +1,5 @@
 """WebSocket endpoints for real-time updates."""
+
 import logging
 from typing import Any
 
@@ -75,5 +76,7 @@ async def websocket_stats() -> dict[str, Any]:
     """Get WebSocket connection statistics."""
     return {
         "active_connections": len(connection_manager.active_connections),
-        "status": "healthy" if len(connection_manager.active_connections) >= 0 else "no_connections",
+        "status": "healthy"
+        if len(connection_manager.active_connections) >= 0
+        else "no_connections",
     }

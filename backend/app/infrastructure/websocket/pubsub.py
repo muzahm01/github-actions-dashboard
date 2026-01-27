@@ -1,4 +1,5 @@
 """Redis pub/sub bridge for WebSocket notifications from Celery tasks."""
+
 import asyncio
 import json
 import logging

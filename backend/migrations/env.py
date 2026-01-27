@@ -94,5 +94,6 @@ else:
         # If we can't connect to database (e.g., during revision --autogenerate without DB),
         # fall back to offline mode
         import sys
+
         print("Warning: Could not connect to database, using offline mode", file=sys.stderr)
         run_migrations_offline()

@@ -1,4 +1,5 @@
 """Tests for WebSocket pub/sub functionality."""
+
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -37,7 +38,10 @@ async def test_connect_subscribes_to_channel(pubsub_manager):
 @pytest.mark.asyncio
 async def test_connect_handles_error_gracefully(pubsub_manager):
     """Test that connect handles errors without crashing."""
-    with patch("app.infrastructure.websocket.pubsub.aioredis.from_url", side_effect=Exception("Redis error")):
+    with patch(
+        "app.infrastructure.websocket.pubsub.aioredis.from_url",
+        side_effect=Exception("Redis error"),
+    ):
         # Should not raise
         await pubsub_manager.connect()
 
@@ -63,6 +67,7 @@ async def test_disconnect_cleans_up_resources(pubsub_manager):
 
     # Mock listening task - use a real asyncio task
     import asyncio
+
     async def dummy_task():
         await asyncio.sleep(0.1)
 
@@ -92,10 +97,7 @@ def test_publish_workflow_run_update():
 
     with patch("redis.from_url", return_value=mock_redis):
         publish_workflow_run_update(
-            run_id=123,
-            status="completed",
-            conclusion="success",
-            data={"duration": 60}
+            run_id=123, status="completed", conclusion="success", data={"duration": 60}
         )
 
         # Verify publish was called
@@ -121,10 +123,7 @@ def test_publish_workflow_run_update_handles_error():
     """Test that publish handles errors gracefully."""
     with patch("redis.from_url", side_effect=Exception("Redis error")):
         # Should not raise
-        publish_workflow_run_update(
-            run_id=123,
-            status="completed"
-        )
+        publish_workflow_run_update(run_id=123, status="completed")
 
 
 def test_publish_job_update():
@@ -133,11 +132,7 @@ def test_publish_job_update():
 
     with patch("redis.from_url", return_value=mock_redis):
         publish_job_update(
-            job_id=456,
-            run_id=123,
-            status="in_progress",
-            conclusion=None,
-            data={"step": "build"}
+            job_id=456, run_id=123, status="in_progress", conclusion=None, data={"step": "build"}
         )
 
         # Verify publish was called
@@ -158,11 +153,7 @@ def test_publish_job_update_handles_error():
     """Test that job update publish handles errors gracefully."""
     with patch("redis.from_url", side_effect=Exception("Redis error")):
         # Should not raise
-        publish_job_update(
-            job_id=456,
-            run_id=123,
-            status="in_progress"
-        )
+        publish_job_update(job_id=456, run_id=123, status="in_progress")
 
 
 def test_publish_analysis_complete():
@@ -170,11 +161,7 @@ def test_publish_analysis_complete():
     mock_redis = MagicMock()
 
     with patch("redis.from_url", return_value=mock_redis):
-        publish_analysis_complete(
-            log_id=789,
-            analysis_id=101,
-            data={"confidence": 0.95}
-        )
+        publish_analysis_complete(log_id=789, analysis_id=101, data={"confidence": 0.95})
 
         # Verify publish was called
         assert mock_redis.publish.called
@@ -192,10 +179,7 @@ def test_publish_analysis_complete_handles_error():
     """Test that analysis complete publish handles errors gracefully."""
     with patch("redis.from_url", side_effect=Exception("Redis error")):
         # Should not raise
-        publish_analysis_complete(
-            log_id=789,
-            analysis_id=101
-        )
+        publish_analysis_complete(log_id=789, analysis_id=101)
 
 
 def test_publish_with_none_data():
@@ -203,11 +187,7 @@ def test_publish_with_none_data():
     mock_redis = MagicMock()
 
     with patch("redis.from_url", return_value=mock_redis):
-        publish_workflow_run_update(
-            run_id=123,
-            status="completed",
-            data=None
-        )
+        publish_workflow_run_update(run_id=123, status="completed", data=None)
 
         call_args = mock_redis.publish.call_args
         message = json.loads(call_args[0][1])

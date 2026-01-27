@@ -1,4 +1,5 @@
 """Tests for WebSocket connection manager."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -124,10 +125,7 @@ async def test_broadcast_workflow_run_update(connection_manager, mock_websocket)
     await connection_manager.connect(mock_websocket)
 
     await connection_manager.broadcast_workflow_run_update(
-        run_id=123,
-        status="completed",
-        conclusion="success",
-        data={"duration": 60}
+        run_id=123, status="completed", conclusion="success", data={"duration": 60}
     )
 
     expected_message = {
@@ -135,7 +133,7 @@ async def test_broadcast_workflow_run_update(connection_manager, mock_websocket)
         "run_id": 123,
         "status": "completed",
         "conclusion": "success",
-        "data": {"duration": 60}
+        "data": {"duration": 60},
     }
     mock_websocket.send_json.assert_called_once_with(expected_message)
 
@@ -146,11 +144,7 @@ async def test_broadcast_job_update(connection_manager, mock_websocket):
     await connection_manager.connect(mock_websocket)
 
     await connection_manager.broadcast_job_update(
-        job_id=456,
-        run_id=123,
-        status="in_progress",
-        conclusion=None,
-        data={"step": "build"}
+        job_id=456, run_id=123, status="in_progress", conclusion=None, data={"step": "build"}
     )
 
     expected_message = {
@@ -159,7 +153,7 @@ async def test_broadcast_job_update(connection_manager, mock_websocket):
         "run_id": 123,
         "status": "in_progress",
         "conclusion": None,
-        "data": {"step": "build"}
+        "data": {"step": "build"},
     }
     mock_websocket.send_json.assert_called_once_with(expected_message)
 
@@ -170,16 +164,14 @@ async def test_broadcast_analysis_complete(connection_manager, mock_websocket):
     await connection_manager.connect(mock_websocket)
 
     await connection_manager.broadcast_analysis_complete(
-        log_id=789,
-        analysis_id=101,
-        data={"confidence": 0.95}
+        log_id=789, analysis_id=101, data={"confidence": 0.95}
     )
 
     expected_message = {
         "type": "analysis_complete",
         "log_id": 789,
         "analysis_id": 101,
-        "data": {"confidence": 0.95}
+        "data": {"confidence": 0.95},
     }
     mock_websocket.send_json.assert_called_once_with(expected_message)
 
