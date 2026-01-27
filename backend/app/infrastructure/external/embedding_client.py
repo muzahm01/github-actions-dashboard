@@ -78,3 +78,13 @@ class EmbeddingClient:
         # For search queries, we might want to preprocess differently
         # For now, just use the same embedding function
         return await self.create_embedding(query)
+
+    async def generate_embedding(self, text: str) -> list[float]:
+        """Generate embedding vector for text (alias for create_embedding)."""
+        return await self.create_embedding(text)
+
+    async def close(self) -> None:
+        """Close the client connection."""
+        if self._client is not None:
+            await self._client.close()
+            self._client = None
