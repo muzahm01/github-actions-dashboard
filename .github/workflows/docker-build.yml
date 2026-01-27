@@ -1,0 +1,107 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test-docker-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          ENVIRONMENT=testing
+          DEBUG=false
+          LOG_LEVEL=INFO
+          POSTGRES_USER=gha
+          POSTGRES_PASSWORD=gha_secret
+          POSTGRES_DB=github_actions
+          REDIS_URL=redis://redis:6379/0
+          GITHUB_TOKEN=test_token
+          GITHUB_WEBHOOK_SECRET=test_secret
+          GITHUB_ORG=test_org
+          ANTHROPIC_API_KEY=test_key
+          OPENAI_API_KEY=test_key
+          SECRET_KEY=test_secret_key
+          EOF
+
+      - name: Start services
+        run: docker compose up -d postgres redis
+
+      - name: Wait for services
+        run: |
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U gha; do sleep 2; done'
+          timeout 60 bash -c 'until docker compose exec -T redis redis-cli ping; do sleep 2; done'
+
+      - name: Build and start API
+        run: docker compose up -d api
+
+      - name: Wait for API
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
+
+      - name: Check API health
+        run: |
+          curl -f http://localhost:8000/health
+          curl -f http://localhost:8000/health/ready
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

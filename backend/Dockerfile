@@ -17,8 +17,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Copy uv from builder for running commands like alembic migrations
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
+
+# Copy pyproject.toml and uv.lock for uv to work properly
+COPY pyproject.toml uv.lock ./
 
 # Set PATH to use virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
@@ -27,6 +33,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 # Copy application code
 COPY app ./app
+
+# Copy migrations for alembic
+COPY migrations ./migrations
+COPY alembic.ini ./
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser && \

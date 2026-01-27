@@ -12,6 +12,7 @@ from app.api.v1 import (
     runs,
     search,
     webhooks,
+    websocket,
     workflows,
 )
 
@@ -19,6 +20,7 @@ api_router = APIRouter()
 
 api_router.include_router(health.router, tags=["Health"])
 api_router.include_router(metrics.router, tags=["Metrics"])
+api_router.include_router(websocket.router, tags=["WebSocket"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(repositories.router, prefix="/repositories", tags=["Repositories"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
