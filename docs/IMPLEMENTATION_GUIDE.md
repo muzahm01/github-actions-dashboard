@@ -254,16 +254,36 @@ def create_app() -> FastAPI:
         return {"status": "healthy"}
     
     @app.get("/health/ready", tags=["Health"])
-    async def readiness_check() -> dict[str, str | dict[str, bool]]:
+    async def readiness_check(
+        db: Annotated[AsyncSession, Depends(get_db)],
+        settings: Annotated[Settings, Depends(get_settings)],
+    ) -> JSONResponse:
         """Readiness check with dependency status."""
-        # TODO: Add actual dependency checks
-        return {
-            "status": "ready",
-            "checks": {
-                "database": True,
-                "redis": True,
-            },
-        }
+        checks = {"database": False, "redis": False}
+
+        # Check database connectivity
+        try:
+            await db.execute(text("SELECT 1"))
+            checks["database"] = True
+        except Exception as e:
+            logger.warning(f"Database health check failed: {e}")
+
+        # Check Redis connectivity
+        try:
+            redis_client = redis.from_url(str(settings.redis_url))
+            await redis_client.ping()
+            await redis_client.close()
+            checks["redis"] = True
+        except Exception as e:
+            logger.warning(f"Redis health check failed: {e}")
+
+        all_healthy = all(checks.values())
+        status_code = status.HTTP_200_OK if all_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
+
+        return JSONResponse(
+            status_code=status_code,
+            content={"status": "ready" if all_healthy else "not_ready", "checks": checks},
+        )
     
     @app.get("/health/live", tags=["Health"])
     async def liveness_check() -> dict[str, str]:
@@ -481,9 +501,17 @@ class Repository(Base, TimestampMixin):
     )
 ```
 
-Create additional models for: Workflow, WorkflowRun, Job, JobStep, Log, TestResult, ErrorAnalysis, Artifact.
+All additional models have been implemented in `backend/app/infrastructure/database/models/`:
+- `workflow.py` - Workflow model
+- `workflow_run.py` - WorkflowRun model
+- `job.py` - Job model
+- `job_step.py` - JobStep model
+- `log.py` - Log model
+- `test_result.py` - TestResult model
+- `error_analysis.py` - ErrorAnalysis model
+- `artifact.py` - Artifact model
 
-(Continue with similar patterns for all models defined in the schema)
+Each model follows the same patterns as Repository with proper relationships and type annotations.
 
 ### 3.3 Create Database Session
 Create `backend/app/infrastructure/database/session.py`:
@@ -793,29 +821,44 @@ class GoTestParser(BaseParser):
         )
 
 
-# Add more parsers: RSpecParser, MochaParser, VitestParser, etc.
-# Follow the same pattern
+# Additional parsers implemented: MochaParser, VitestParser, RSpecParser, CargoTestParser,
+# PHPUnitParser, JUnitParser, DotNetParser, UnittestParser, Nose2Parser, TestNGParser,
+# MinitestParser, PlaywrightParser - all follow the same BaseParser pattern
 
 
 class TestResultParserService:
     """Service that orchestrates multiple test result parsers."""
-    
+
     def __init__(self, parsers: list[TestResultParser] | None = None) -> None:
         """Initialize with parsers, using defaults if none provided."""
         self._parsers = parsers or self._get_default_parsers()
-    
+
     @staticmethod
     def _get_default_parsers() -> list[TestResultParser]:
         """Get default list of parsers."""
         return [
             PytestParser(),
+            UnittestParser(),
+            Nose2Parser(),
             JestParser(),
             GoTestParser(),
-            # Add other parsers
+            MochaParser(),
+            VitestParser(),
+            PlaywrightParser(),
+            RSpecParser(),
+            MinitestParser(),
+            CargoTestParser(),
+            PHPUnitParser(),
+            JUnitParser(),
+            TestNGParser(),
+            DotNetParser(),
         ]
-    
+
     def parse(self, log_content: str) -> TestResult | None:
         """Try all parsers until one succeeds."""
+        if not log_content:
+            return None
+
         for parser in self._parsers:
             if parser.can_parse(log_content):
                 result = parser.parse(log_content)
@@ -994,19 +1037,16 @@ import json
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Header, Request, status
+from fastapi import APIRouter, Depends, Header, Request, status
 from fastapi.responses import JSONResponse
 
-from app.application.services.webhook_processor import (
-    GitHubWebhookValidator,
-    WebhookProcessor,
-)
-from app.config import get_settings
+from app.application.services.webhook_processor import GitHubWebhookValidator
+from app.config import Settings, get_settings
 from app.core.exceptions import WebhookValidationError
+from app.tasks.webhook_tasks import process_webhook_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-settings = get_settings()
 
 
 @router.post("/github")
@@ -1015,28 +1055,28 @@ async def github_webhook(
     x_github_event: Annotated[str, Header()],
     x_hub_signature_256: Annotated[str, Header()],
     x_github_delivery: Annotated[str, Header()],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> JSONResponse:
     """
     Handle GitHub webhook events.
-    
+
     Processes workflow_run and workflow_job events.
     Returns 202 Accepted and queues for async processing.
     """
     payload = await request.body()
-    
-    # Create validator and processor
+
+    # Create validator using injected settings
     validator = GitHubWebhookValidator(settings.github_webhook_secret)
-    # TODO: Inject proper idempotency store
-    
+
     try:
         # Validate signature
         if not validator.validate(payload, x_hub_signature_256):
             raise WebhookValidationError()
-        
+
         # Parse payload
         data = json.loads(payload)
         action = data.get("action", "")
-        
+
         logger.info(
             "Received GitHub webhook",
             extra={
@@ -1045,15 +1085,15 @@ async def github_webhook(
                 "delivery_id": x_github_delivery,
             },
         )
-        
+
         # Queue for processing based on event type
-        if x_github_event == "workflow_run":
-            # TODO: Queue Celery task
-            pass
-        elif x_github_event == "workflow_job":
-            # TODO: Queue Celery task
-            pass
-        
+        if x_github_event in ("workflow_run", "workflow_job"):
+            process_webhook_event.delay(
+                event_type=x_github_event,
+                delivery_id=x_github_delivery,
+                payload=data,
+            )
+
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
             content={
