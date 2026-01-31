@@ -91,3 +91,65 @@ class TestJobRepository:
         result = await repository.get_with_logs(1)
 
         assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_upsert_by_github_id_creates_new(
+        self, repository: JobRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test upsert creates new job when it doesn't exist."""
+
+        # Mock get_by_github_id to return None (doesn't exist)
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        job_data = {
+            "github_id": 123,
+            "run_id": 1,
+            "name": "test-job",
+            "status": "completed",
+        }
+
+        # Mock the add, flush, and refresh
+        mock_session.add = MagicMock()
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        _result = await repository.upsert_by_github_id(job_data)
+
+        # Verify create was called
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_upsert_by_github_id_updates_existing(
+        self, repository: JobRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test upsert updates existing job."""
+        from app.infrastructure.database.models.job import Job
+
+        # Create a mock existing job
+        existing_job = MagicMock(spec=Job)
+        existing_job.github_id = 123
+        existing_job.name = "test-job"
+        existing_job.status = "in_progress"
+
+        # Mock get_by_github_id to return existing job
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing_job
+        mock_session.execute.return_value = mock_result
+
+        job_data = {
+            "github_id": 123,
+            "name": "test-job",
+            "status": "completed",
+        }
+
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        _result = await repository.upsert_by_github_id(job_data)
+
+        # Verify update was called
+        mock_session.flush.assert_called()
+        assert existing_job.status == "completed"

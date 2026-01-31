@@ -63,11 +63,16 @@ class TestCleanupOldDataTask:
         """Test that cleanup deletes data older than retention period."""
         from app.tasks.workflow_tasks import cleanup_old_data
 
-        mock_run_async.return_value = {
-            "status": "completed",
-            "deleted_runs": 10,
-            "deleted_logs": 25,
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "completed",
+                "deleted_runs": 10,
+                "deleted_logs": 25,
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = cleanup_old_data()
 
@@ -83,10 +88,15 @@ class TestSyncAllWorkflowsWithDB:
         """Test that sync fetches active repositories from database."""
         from app.tasks.workflow_tasks import sync_all_workflows
 
-        mock_run_async.return_value = {
-            "status": "completed",
-            "repositories_synced": 3,
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "completed",
+                "repositories_synced": 3,
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = sync_all_workflows()
 

@@ -98,3 +98,69 @@ class TestRepositoryRepository:
 
         assert len(result) == 1
         mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_upsert_by_github_id_creates_new(
+        self, repository: RepositoryRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test upsert creates new repository when it doesn't exist."""
+
+        # Mock get_by_github_id to return None (doesn't exist)
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        repo_data = {
+            "github_id": 12345,
+            "full_name": "owner/repo",
+            "owner": "owner",
+            "name": "repo",
+        }
+
+        # Mock the add, flush, and refresh
+        mock_session.add = MagicMock()
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        _result = await repository.upsert_by_github_id(repo_data)
+
+        # Verify create was called
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_upsert_by_github_id_updates_existing(
+        self, repository: RepositoryRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test upsert updates existing repository."""
+        from app.infrastructure.database.models.repository import Repository
+
+        # Create a mock existing repository
+        existing_repo = MagicMock(spec=Repository)
+        existing_repo.github_id = 12345
+        existing_repo.full_name = "owner/repo"
+        existing_repo.owner = "owner"
+        existing_repo.name = "repo"
+
+        # Mock get_by_github_id to return existing repo
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing_repo
+        mock_session.execute.return_value = mock_result
+
+        repo_data = {
+            "github_id": 12345,
+            "full_name": "owner/new-repo",
+            "owner": "owner",
+            "name": "new-repo",
+        }
+
+        # Mock flush and refresh
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        _result = await repository.upsert_by_github_id(repo_data)
+
+        # Verify update was called
+        mock_session.flush.assert_called()
+        assert existing_repo.full_name == "owner/new-repo"
+        assert existing_repo.name == "new-repo"

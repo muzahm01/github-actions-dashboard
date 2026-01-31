@@ -33,12 +33,17 @@ class TestProcessWebhookEventTask:
             },
         }
 
-        mock_run_async.return_value = {
-            "status": "processed",
-            "event_type": "workflow_run",
-            "action": "completed",
-            "run_id": 12345,
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "processed",
+                "event_type": "workflow_run",
+                "action": "completed",
+                "run_id": 12345,
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = process_webhook_event(
             event_type="workflow_run",
@@ -66,12 +71,17 @@ class TestProcessWebhookEventTask:
             },
         }
 
-        mock_run_async.return_value = {
-            "status": "skipped",
-            "event_type": "workflow_run",
-            "action": "in_progress",
-            "reason": "Only completed runs are processed",
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "skipped",
+                "event_type": "workflow_run",
+                "action": "in_progress",
+                "reason": "Only completed runs are processed",
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = process_webhook_event(
             event_type="workflow_run",
@@ -99,12 +109,17 @@ class TestProcessWebhookEventTask:
             },
         }
 
-        mock_run_async.return_value = {
-            "status": "processed",
-            "event_type": "workflow_job",
-            "action": "completed",
-            "job_id": 67890,
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "processed",
+                "event_type": "workflow_job",
+                "action": "completed",
+                "job_id": 67890,
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = process_webhook_event(
             event_type="workflow_job",
@@ -120,11 +135,16 @@ class TestProcessWebhookEventTask:
         """Should skip unsupported event types gracefully."""
         payload = {"action": "opened", "pull_request": {"id": 123}}
 
-        mock_run_async.return_value = {
-            "status": "skipped",
-            "event_type": "pull_request",
-            "reason": "Unsupported event type",
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "skipped",
+                "event_type": "pull_request",
+                "reason": "Unsupported event type",
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = process_webhook_event(
             event_type="pull_request",
@@ -155,13 +175,18 @@ class TestProcessWebhookEventTask:
             },
         }
 
-        mock_run_async.return_value = {
-            "status": "processed",
-            "event_type": "workflow_run",
-            "action": "completed",
-            "run_id": 12345,
-            "triggered_tasks": ["process_workflow_run"],
-        }
+        def close_coro(coro):  # type: ignore[no-untyped-def]
+            """Close coroutine to prevent ResourceWarning."""
+            coro.close()
+            return {
+                "status": "processed",
+                "event_type": "workflow_run",
+                "action": "completed",
+                "run_id": 12345,
+                "triggered_tasks": ["process_workflow_run"],
+            }
+
+        mock_run_async.side_effect = close_coro
 
         result = process_webhook_event(
             event_type="workflow_run",
