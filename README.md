@@ -38,9 +38,36 @@ A comprehensive, self-hosted web application for monitoring and analyzing GitHub
 
 - Docker 27+ and Docker Compose 2.32+
 - Python 3.12+ (for local development)
+- [UV](https://docs.astral.sh/uv/) - Fast Python package manager
 - Node.js 22+ and pnpm 9+ (for frontend development)
 - PostgreSQL 16 with pgvector extension
 - Redis 7+
+
+## 🔧 Installing UV
+
+This project uses **UV** for fast, reliable Python package management. UV is significantly faster than pip and provides better dependency resolution.
+
+### macOS/Linux
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Windows
+```powershell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### Using pip (if preferred)
+```bash
+pip install uv
+```
+
+### Verify Installation
+```bash
+uv --version
+```
+
+For more installation options, see the [UV documentation](https://docs.astral.sh/uv/getting-started/installation/).
 
 ## 🛠️ Quick Start
 
@@ -84,6 +111,66 @@ make migrate
 - **API Docs**: http://localhost:8000/docs
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
+
+## 💻 Local Development (Without Docker)
+
+For faster iteration during development, you can run the backend locally with UV:
+
+### 1. Install Dependencies
+```bash
+cd backend
+uv sync
+```
+
+This will:
+- Create a virtual environment in `.venv/`
+- Install all dependencies from `pyproject.toml`
+- Lock dependencies in `uv.lock`
+
+### 2. Activate Virtual Environment
+```bash
+# macOS/Linux
+source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
+```
+
+Or use `uv run` to automatically run commands in the virtual environment:
+```bash
+uv run pytest
+uv run uvicorn app.main:app --reload
+```
+
+### 3. Start External Services
+You still need PostgreSQL and Redis running. Use Docker Compose for these:
+```bash
+docker-compose up -d postgres redis
+```
+
+### 4. Run Database Migrations
+```bash
+cd backend
+uv run alembic upgrade head
+```
+
+### 5. Start the API Server
+```bash
+cd backend
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 6. Start Celery Worker (in separate terminal)
+```bash
+cd backend
+uv run celery -A app.tasks.celery_app worker --loglevel=info
+```
+
+### 7. Start Celery Beat (in separate terminal)
+```bash
+cd backend
+uv run celery -A app.tasks.celery_app beat --loglevel=info
+```
 
 ## 🏗️ Architecture
 
@@ -157,6 +244,54 @@ make migrate
 
 ## 🔧 Development
 
+### UV Package Management
+
+UV provides fast, reliable Python package management for this project.
+
+#### Installing Dependencies
+```bash
+cd backend
+
+# Install all dependencies (including dev dependencies)
+uv sync
+
+# Install only production dependencies
+uv sync --no-dev
+
+# Update dependencies to latest compatible versions
+uv lock --upgrade
+```
+
+#### Adding Dependencies
+```bash
+# Add a production dependency
+uv add fastapi
+
+# Add a development dependency
+uv add --dev pytest
+
+# Add a specific version
+uv add "pydantic>=2.0,<3.0"
+```
+
+#### Removing Dependencies
+```bash
+# Remove a dependency
+uv remove package-name
+```
+
+#### Running Commands
+```bash
+# Run any Python command in the virtual environment
+uv run python script.py
+uv run pytest
+uv run uvicorn app.main:app --reload
+
+# Or activate the virtual environment
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate     # Windows
+```
+
 ### Makefile Commands
 
 ```bash
@@ -193,30 +328,57 @@ make health         # Check service health
 ### Running Tests
 
 ```bash
+cd backend
+
 # Run all tests
-cd backend && uv run pytest
+uv run pytest
 
 # Run with coverage
-cd backend && uv run pytest --cov=app --cov-report=html
+uv run pytest --cov=app --cov-report=html
+
+# Run with coverage and fail if under 85%
+uv run pytest --cov=app --cov-report=term --cov-fail-under=85
 
 # Run specific test file
-cd backend && uv run pytest tests/unit/application/services/test_test_result_parser.py
+uv run pytest tests/unit/application/services/test_test_result_parser.py
 
-# Run integration tests
-cd backend && uv run pytest tests/integration -v
+# Run integration tests only
+uv run pytest tests/integration -v
+
+# Run in parallel for faster execution
+uv run pytest -n auto
+
+# Run with verbose output
+uv run pytest -v
+
+# Run tests matching a pattern
+uv run pytest -k "test_webhook"
 ```
 
 ### Code Quality
 
 ```bash
-# Run linter
-cd backend && uv run ruff check app tests
+cd backend
+
+# Run linter (check only)
+uv run ruff check app tests
+
+# Run linter with auto-fix
+uv run ruff check --fix app tests
 
 # Format code
-cd backend && uv run ruff format app tests
+uv run ruff format app tests
+
+# Check formatting without changes
+uv run ruff format --check app tests
 
 # Type checking
-cd backend && uv run mypy app
+uv run mypy app
+
+# Run all quality checks
+uv run ruff check app tests && \
+uv run ruff format --check app tests && \
+uv run mypy app
 ```
 
 ## 🔒 Security

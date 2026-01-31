@@ -118,3 +118,84 @@ class TestWorkflowRunRepository:
         result = await repository.get_with_jobs(1)
 
         assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_upsert_by_github_id_creates_new(
+        self, repository: WorkflowRunRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test upsert creates new workflow run when it doesn't exist."""
+
+        # Mock get_by_github_id to return None (doesn't exist)
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        run_data = {
+            "github_id": 123,
+            "workflow_id": 1,
+            "status": "completed",
+            "conclusion": "success",
+        }
+
+        # Mock the add, flush, and refresh
+        mock_session.add = MagicMock()
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        _result = await repository.upsert_by_github_id(run_data)
+
+        # Verify create was called
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_upsert_by_github_id_updates_existing(
+        self, repository: WorkflowRunRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test upsert updates existing workflow run."""
+        from app.infrastructure.database.models.workflow_run import WorkflowRun
+
+        # Create a mock existing run
+        existing_run = MagicMock(spec=WorkflowRun)
+        existing_run.github_id = 123
+        existing_run.status = "in_progress"
+        existing_run.conclusion = None
+
+        # Mock get_by_github_id to return existing run
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing_run
+        mock_session.execute.return_value = mock_result
+
+        run_data = {
+            "github_id": 123,
+            "status": "completed",
+            "conclusion": "success",
+        }
+
+        mock_session.flush = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        _result = await repository.upsert_by_github_id(run_data)
+
+        # Verify update was called
+        mock_session.flush.assert_called()
+        assert existing_run.status == "completed"
+        assert existing_run.conclusion == "success"
+
+    @pytest.mark.asyncio
+    async def test_get_runs_before_date(
+        self, repository: WorkflowRunRepository, mock_session: AsyncMock
+    ) -> None:
+        """Test getting runs before a cutoff date."""
+        cutoff_date = datetime(2024, 1, 1, tzinfo=UTC)
+        mock_runs = [MagicMock(), MagicMock()]
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = mock_runs
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute.return_value = mock_result
+
+        result = await repository.get_runs_before_date(cutoff_date)
+
+        assert len(result) == 2
+        mock_session.execute.assert_called_once()

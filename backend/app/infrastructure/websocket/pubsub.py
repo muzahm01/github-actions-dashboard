@@ -156,3 +156,53 @@ def publish_analysis_complete(
         r.close()
     except Exception as e:
         logger.error(f"Failed to publish analysis complete: {e}")
+
+
+def publish_embedding_generated(
+    log_id: int,
+    embedding_size: int,
+    data: dict[str, Any] | None = None,
+) -> None:
+    """Publish embedding generation completion (can be called from Celery tasks)."""
+    import redis
+
+    try:
+        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
+        message = {
+            "type": "embedding_generated",
+            "log_id": log_id,
+            "embedding_size": embedding_size,
+            "data": data or {},
+        }
+        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
+        r.close()
+    except Exception as e:
+        logger.error(f"Failed to publish embedding generated: {e}")
+
+
+def publish_test_results_parsed(
+    log_id: int,
+    framework: str,
+    total: int,
+    passed: int,
+    failed: int,
+    data: dict[str, Any] | None = None,
+) -> None:
+    """Publish test result parsing completion (can be called from Celery tasks)."""
+    import redis
+
+    try:
+        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
+        message = {
+            "type": "test_results_parsed",
+            "log_id": log_id,
+            "framework": framework,
+            "total": total,
+            "passed": passed,
+            "failed": failed,
+            "data": data or {},
+        }
+        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
+        r.close()
+    except Exception as e:
+        logger.error(f"Failed to publish test results parsed: {e}")
