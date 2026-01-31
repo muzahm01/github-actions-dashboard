@@ -34,8 +34,6 @@ class TestResultRepository(BaseRepository[TestResult]):
 
     async def get_recent(self, limit: int = 20) -> list[TestResult]:
         """Get recent test results ordered by creation date."""
-        stmt = (
-            select(TestResult).order_by(TestResult.created_at.desc()).limit(limit)
-        )
+        stmt = select(TestResult).order_by(TestResult.created_at.desc()).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

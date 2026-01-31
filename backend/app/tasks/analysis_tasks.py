@@ -314,9 +314,7 @@ def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict:
             stmt = (
                 select(Log.id)
                 .where(Log.embedding.is_(None))
-                .where(
-                    (Log.error_content.isnot(None)) | (Log.log_content.isnot(None))
-                )
+                .where((Log.error_content.isnot(None)) | (Log.log_content.isnot(None)))
                 .limit(max_logs)
             )
             result = await session.execute(stmt)

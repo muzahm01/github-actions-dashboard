@@ -161,9 +161,7 @@ def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict:  # t
                                 db_job = await job_repo.get_by_github_id(job.id)
                                 if db_job:
                                     # Extract error content and category
-                                    error_content, category = _extract_error_content(
-                                        log_content
-                                    )
+                                    error_content, category = _extract_error_content(log_content)
 
                                     # Create log entry with error content
                                     new_log = Log(
