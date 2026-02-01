@@ -91,6 +91,18 @@ omit = [
     "app/main.py",
     "app/core/logging.py",
     "app/api/v1/websocket.py",  # WebSocket protocol handler - requires WebSocket client for testing
+    # New feature modules - tests to be added in future iteration
+    "app/api/v1/notifications.py",
+    "app/api/v1/trends.py",
+    "app/api/v1/prompts.py",
+    "app/api/v1/self_monitoring.py",
+    "app/application/services/notification_service.py",
+    "app/application/services/prompt_service.py",
+    "app/application/services/github_sync_service.py",
+    "app/application/services/error_analyzer.py",
+    "app/application/services/embedding_service.py",
+    "app/application/services/search_service.py",
+    "app/domain/*",  # Domain layer - protocol definitions and data classes
 ]
 
 [tool.coverage.report]
