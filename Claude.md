@@ -176,9 +176,18 @@ uv run pytest -k "test_webhook"    # By pattern
 |------|---------|
 | `backend/app/main.py` | FastAPI app factory, middleware |
 | `backend/app/config.py` | Pydantic Settings configuration |
-| `backend/app/application/services/test_result_parser.py` | Multi-framework test parsing |
+| `backend/app/application/services/test_result_parser.py` | Multi-framework test parsing (16+ frameworks) |
 | `backend/app/application/services/error_analyzer.py` | LLM-powered error analysis |
-| `backend/app/application/services/webhook_processor.py` | Webhook handling |
+| `backend/app/application/services/webhook_processor.py` | Webhook handling with signature validation |
+| `backend/app/application/services/search_service.py` | Vector similarity search |
+| `backend/app/application/services/github_sync_service.py` | GitHub API synchronization |
+| `backend/app/application/services/notification_service.py` | Notification handling |
+| `backend/app/application/services/prompt_service.py` | Custom analysis prompts |
+| `backend/app/infrastructure/external/github_client.py` | GitHub API client with rate limiting |
+| `backend/app/infrastructure/external/llm_client.py` | Claude LLM client |
+| `backend/app/infrastructure/external/embedding_client.py` | OpenAI embedding client |
+| `backend/app/infrastructure/websocket/manager.py` | WebSocket connection manager |
+| `backend/app/tasks/celery_app.py` | Celery configuration and task queue |
 | `backend/pyproject.toml` | Python dependencies & tool config |
 | `docker-compose.yml` | Development infrastructure |
 | `Makefile` | Common development commands |
@@ -201,9 +210,10 @@ OPENAI_API_KEY
 
 GitHub Actions workflows in `.github/workflows/`:
 - `ci.yml` - Main CI (lint, test, coverage, Docker build)
-- `backend-ci.yml` - Backend-specific checks
-- `integration-tests.yml` - Full integration suite
-- `docker-build.yml` - Docker image building
+- `backend-ci.yml` - Backend-specific checks (ruff, mypy, pytest)
+- `integration-tests.yml` - Full integration suite with database
+- `docker-build.yml` - Docker image building and testing
+- `regression-tests.yml` - Self-monitoring regression tests (every 4 hours)
 
 ## Important Notes
 
