@@ -41,7 +41,7 @@ celery_app.conf.update(
             "schedule": 300.0,  # 5 minutes
         },
         "cleanup-old-data-daily": {
-            "task": "app.tasks.workflow_tasks.cleanup_old_data",
+            "task": "app.tasks.maintenance_tasks.cleanup_old_data",
             "schedule": 86400.0,  # 24 hours
         },
         "health-check-every-hour": {
