@@ -169,6 +169,110 @@ class ApiClient {
     const response = await this.client.get<DashboardStats>('/dashboard/stats')
     return response.data
   }
+
+  // Trends endpoints
+  async getTrendSummary(): Promise<TrendSummary> {
+    const response = await this.client.get<TrendSummary>('/trends/summary')
+    return response.data
+  }
+
+  async getSuccessRateTrend(
+    period: 'daily' | 'weekly' | 'monthly' = 'daily',
+    days: number = 30
+  ): Promise<SuccessRateTrend> {
+    const response = await this.client.get<SuccessRateTrend>('/trends/success-rate', {
+      params: { period, days },
+    })
+    return response.data
+  }
+
+  async getFailureAnalysis(days: number = 30): Promise<FailureAnalysis> {
+    const response = await this.client.get<FailureAnalysis>('/trends/failures', {
+      params: { days },
+    })
+    return response.data
+  }
+
+  // Notification endpoints
+  async getNotificationConfigs(): Promise<NotificationConfig[]> {
+    const response = await this.client.get<NotificationConfig[]>('/notifications/configs')
+    return response.data
+  }
+
+  async createNotificationConfig(config: {
+    channel: string
+    webhook_url: string
+    enabled: boolean
+    events: string[]
+  }): Promise<NotificationConfig> {
+    const response = await this.client.post<NotificationConfig>('/notifications/configs', config)
+    return response.data
+  }
+
+  async deleteNotificationConfig(channel: string): Promise<void> {
+    await this.client.delete(`/notifications/configs/${channel}`)
+  }
+
+  async testNotification(channel: string): Promise<TestNotificationResult> {
+    const response = await this.client.post<TestNotificationResult>('/notifications/test', {
+      channel,
+    })
+    return response.data
+  }
+}
+
+// Type definitions for new endpoints
+interface TrendSummary {
+  total_runs_today: number
+  total_runs_yesterday: number
+  runs_change_percent: number
+  success_rate_today: number
+  success_rate_yesterday: number
+  success_rate_direction: string
+  total_failures_today: number
+  total_failures_yesterday: number
+  failures_change_percent: number
+  avg_duration_seconds: number
+  duration_change_percent: number
+  most_active_repositories: Array<{ id: number; name: string; runs: number }>
+  most_failing_workflows: Array<{ id: number; name: string; failures: number }>
+}
+
+interface TrendPoint {
+  timestamp: string
+  value: number
+  count: number
+}
+
+interface SuccessRateTrend {
+  period: string
+  points: TrendPoint[]
+  average_rate: number
+  direction: string
+  change_percent: number
+}
+
+interface FailureAnalysis {
+  total_failures: number
+  unique_errors: number
+  top_failing_workflows: Array<{ id: number; name: string; count: number }>
+  top_failing_repositories: Array<{ id: number; name: string; count: number }>
+  most_common_errors: Array<{ error: string; count: number }>
+}
+
+interface NotificationConfig {
+  channel: string
+  enabled: boolean
+  events: string[]
+  repository_filter: string[]
+  webhook_configured: boolean
+}
+
+interface TestNotificationResult {
+  success: boolean
+  channel: string
+  message: string
+  error: string | null
 }
 
 export const api = new ApiClient()

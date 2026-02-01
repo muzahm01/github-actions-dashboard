@@ -8,9 +8,13 @@ from app.api.v1 import (
     health,
     jobs,
     metrics,
+    notifications,
+    prompts,
     repositories,
     runs,
     search,
+    self_monitoring,
+    trends,
     webhooks,
     websocket,
     workflows,
@@ -29,3 +33,9 @@ api_router.include_router(runs.router, prefix="/runs", tags=["Runs"])
 api_router.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
 api_router.include_router(analysis.router, prefix="/analysis", tags=["Analysis"])
 api_router.include_router(search.router, prefix="/search", tags=["Search"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+api_router.include_router(trends.router, prefix="/trends", tags=["Trends"])
+api_router.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
+api_router.include_router(
+    self_monitoring.router, prefix="/self-monitoring", tags=["Self-Monitoring"]
+)

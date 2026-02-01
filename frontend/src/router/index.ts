@@ -51,6 +51,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Search' },
   },
   {
+    path: '/trends',
+    name: 'trends',
+    component: () => import('@/views/TrendsView.vue'),
+    meta: { title: 'Trends & Analytics' },
+  },
+  {
+    path: '/notifications',
+    name: 'notifications',
+    component: () => import('@/views/NotificationsView.vue'),
+    meta: { title: 'Notifications' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),
