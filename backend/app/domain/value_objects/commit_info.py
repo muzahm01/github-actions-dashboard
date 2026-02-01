@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -24,10 +25,8 @@ class CommitInfo:
 
         timestamp = None
         if date_str := author_data.get("date"):
-            try:
+            with contextlib.suppress(ValueError):
                 timestamp = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            except ValueError:
-                pass
 
         return cls(
             sha=data.get("sha", ""),

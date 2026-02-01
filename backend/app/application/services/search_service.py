@@ -51,7 +51,7 @@ class LogSearchRepository(Protocol):
 class EmbeddingService(Protocol):
     """Protocol for embedding service."""
 
-    async def generate(self, text: str, use_cache: bool = True) -> "EmbeddingResult":
+    async def generate(self, text: str, use_cache: bool = True) -> EmbeddingResult:
         """Generate embedding for text."""
         ...
 

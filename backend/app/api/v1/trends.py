@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -265,7 +265,8 @@ async def get_trend_summary() -> DashboardTrendSummaryResponse:
     yesterday_failures = int(yesterday_runs * (1 - yesterday_rate))
     failures_change = (
         ((today_failures - yesterday_failures) / yesterday_failures * 100)
-        if yesterday_failures else 0
+        if yesterday_failures
+        else 0
     )
 
     return DashboardTrendSummaryResponse(
@@ -354,9 +355,7 @@ async def get_duration_trend(
     start_date = end_date - timedelta(days=days)
 
     # Generate sample duration data (in seconds)
-    points = _generate_sample_points(
-        start_date, end_date, period, base_value=180, variance=60
-    )
+    points = _generate_sample_points(start_date, end_date, period, base_value=180, variance=60)
     # Adjust for duration values
     for point in points:
         point.value = max(30, point.value * 200)
@@ -394,9 +393,7 @@ async def get_runs_count_trend(
     start_date = end_date - timedelta(days=days)
 
     # Generate sample run count data
-    points = _generate_sample_points(
-        start_date, end_date, period, base_value=50, variance=20
-    )
+    points = _generate_sample_points(start_date, end_date, period, base_value=50, variance=20)
     # Adjust for count values
     for point in points:
         point.value = max(1, int(point.value * 100))

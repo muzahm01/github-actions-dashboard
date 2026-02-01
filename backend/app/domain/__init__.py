@@ -7,10 +7,7 @@ This module contains:
 - Repositories: Interfaces for data access
 """
 
-from app.domain import entities
-from app.domain import value_objects
-from app.domain import events
-from app.domain import repositories
+from app.domain import entities, events, repositories, value_objects
 
 __all__ = [
     "entities",

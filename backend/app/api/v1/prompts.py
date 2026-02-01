@@ -8,10 +8,10 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.application.services.prompt_service import (
-    PromptService,
-    PromptType,
-    PromptTemplate,
     DEFAULT_PROMPTS,
+    PromptService,
+    PromptTemplate,
+    PromptType,
 )
 
 router = APIRouter()
@@ -108,9 +108,9 @@ async def list_prompt_types() -> list[dict]:
         {
             "type": pt.value,
             "has_default": pt in DEFAULT_PROMPTS,
-            "description": DEFAULT_PROMPTS.get(pt, PromptTemplate(
-                id=0, name="", prompt_type=pt, template=""
-            )).description,
+            "description": DEFAULT_PROMPTS.get(
+                pt, PromptTemplate(id=0, name="", prompt_type=pt, template="")
+            ).description,
         }
         for pt in PromptType
     ]
@@ -173,7 +173,7 @@ async def update_prompt(
     return _to_response(prompt)
 
 
-@router.delete("/{prompt_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{prompt_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_prompt(prompt_id: int) -> None:
     """Delete a custom prompt template."""
     deleted = await _prompt_service.delete_prompt(prompt_id)

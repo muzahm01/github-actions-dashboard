@@ -7,9 +7,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from app.domain.entities.error_analysis import ErrorAnalysis
-from app.domain.entities.log import Log
 from app.domain.entities.test_result import TestResult
-
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +44,7 @@ class LLMClient(Protocol):
         framework: str,
         job_name: str,
         use_cache: bool,
-    ) -> "LLMAnalysisResult":
+    ) -> LLMAnalysisResult:
         """Analyze error using LLM."""
         ...
 

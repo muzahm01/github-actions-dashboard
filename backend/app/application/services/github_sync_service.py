@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
+from app.domain.entities.job import Job
 from app.domain.entities.repository import Repository
 from app.domain.entities.workflow import Workflow
 from app.domain.entities.workflow_run import WorkflowRun
-from app.domain.entities.job import Job
 from app.domain.value_objects.time_range import TimeRange
 
 logger = logging.getLogger(__name__)
@@ -289,9 +289,7 @@ class GitHubSyncService:
 
         run_started_at = None
         if data.get("run_started_at"):
-            run_started_at = datetime.fromisoformat(
-                data["run_started_at"].replace("Z", "+00:00")
-            )
+            run_started_at = datetime.fromisoformat(data["run_started_at"].replace("Z", "+00:00"))
 
         run = WorkflowRun.create(
             github_id=github_id,

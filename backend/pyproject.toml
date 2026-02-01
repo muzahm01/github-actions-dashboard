@@ -52,7 +52,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "N818"]  # Allow Exception suffix naming flexibility
+ignore = ["E501", "N818", "B008"]  # B008: Allow FastAPI Query() defaults
 
 [tool.mypy]
 python_version = "3.12"

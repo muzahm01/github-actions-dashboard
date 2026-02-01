@@ -1,15 +1,15 @@
 """Domain repository interfaces module."""
 
 from app.domain.repositories.interfaces import (
-    RepositoryRepository,
-    WorkflowRepository,
-    WorkflowRunRepository,
+    ErrorAnalysisRepository,
     JobRepository,
     LogRepository,
-    ErrorAnalysisRepository,
-    TestResultRepository,
     NotificationRepository,
+    RepositoryRepository,
+    TestResultRepository,
     TrendRepository,
+    WorkflowRepository,
+    WorkflowRunRepository,
 )
 
 __all__ = [

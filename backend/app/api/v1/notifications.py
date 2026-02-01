@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.domain.entities.notification import NotificationChannel, NotificationType
@@ -77,7 +77,9 @@ async def list_notification_configs() -> list[NotificationConfigResponse]:
     return configs
 
 
-@router.post("/configs", response_model=NotificationConfigResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/configs", response_model=NotificationConfigResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_notification_config(
     config: NotificationConfigCreate,
 ) -> NotificationConfigResponse:
@@ -98,7 +100,7 @@ async def create_notification_config(
     )
 
 
-@router.delete("/configs/{channel}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/configs/{channel}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_notification_config(channel: NotificationChannel) -> None:
     """Delete notification configuration."""
     if channel in _notification_configs:
@@ -118,8 +120,8 @@ async def test_notification(request: TestNotificationRequest) -> TestNotificatio
 
     # Import here to avoid circular imports
     from app.application.services.notification_service import (
-        SlackSender,
         DiscordSender,
+        SlackSender,
         WebhookSender,
     )
     from app.domain.entities.notification import Notification
@@ -179,8 +181,8 @@ async def trigger_workflow_failed_notification(
 ) -> dict:
     """Manually trigger a workflow failed notification."""
     from app.application.services.notification_service import (
-        NotificationService,
         NotificationConfig,
+        NotificationService,
     )
     from app.domain.entities.notification import WorkflowFailedPayload
 

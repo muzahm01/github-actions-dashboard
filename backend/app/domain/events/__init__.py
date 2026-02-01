@@ -1,21 +1,21 @@
 """Domain events module."""
 
-from app.domain.events.base import DomainEvent, EventHandler
-from app.domain.events.workflow_events import (
-    WorkflowRunStarted,
-    WorkflowRunCompleted,
-    WorkflowRunFailed,
-    JobCompleted,
-    JobFailed,
-)
 from app.domain.events.analysis_events import (
-    ErrorAnalysisRequested,
     ErrorAnalysisCompleted,
+    ErrorAnalysisRequested,
 )
+from app.domain.events.base import DomainEvent, EventHandler
 from app.domain.events.notification_events import (
+    NotificationFailed,
     NotificationRequested,
     NotificationSent,
-    NotificationFailed,
+)
+from app.domain.events.workflow_events import (
+    JobCompleted,
+    JobFailed,
+    WorkflowRunCompleted,
+    WorkflowRunFailed,
+    WorkflowRunStarted,
 )
 
 __all__ = [

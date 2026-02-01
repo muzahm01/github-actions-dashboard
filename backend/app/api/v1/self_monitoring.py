@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -59,7 +62,6 @@ def _get_startup_time() -> float:
     """Get or initialize startup time."""
     global _startup_time
     if _startup_time is None:
-        import time
         _startup_time = time.time()
     return _startup_time
 
@@ -127,8 +129,6 @@ async def update_self_monitoring_config(
 @router.get("/health", response_model=SystemHealthResponse)
 async def get_system_health() -> SystemHealthResponse:
     """Get comprehensive system health status."""
-    import time
-    import asyncio
 
     checks: list[HealthCheckResult] = []
     settings = get_settings()
@@ -168,8 +168,6 @@ async def get_system_health() -> SystemHealthResponse:
 
 async def _check_database() -> HealthCheckResult:
     """Check database connectivity."""
-    import time
-
     start = time.perf_counter()
     try:
         # In production, this would actually query the database
@@ -196,9 +194,6 @@ async def _check_database() -> HealthCheckResult:
 
 async def _check_redis() -> HealthCheckResult:
     """Check Redis connectivity."""
-    import time
-    import asyncio
-
     start = time.perf_counter()
     try:
         # In production, this would actually ping Redis
@@ -224,9 +219,6 @@ async def _check_redis() -> HealthCheckResult:
 
 async def _check_github_api() -> HealthCheckResult:
     """Check GitHub API availability."""
-    import time
-    import asyncio
-
     start = time.perf_counter()
     try:
         # In production, this would check rate limits
@@ -248,6 +240,3 @@ async def _check_github_api() -> HealthCheckResult:
             message=f"GitHub API check failed: {str(e)}",
             latency_ms=latency,
         )
-
-
-import asyncio

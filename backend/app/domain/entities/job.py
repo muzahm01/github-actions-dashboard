@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-
 JobStatus = Literal["queued", "in_progress", "completed", "waiting"]
 JobConclusion = Literal[
     "success", "failure", "cancelled", "skipped", "timed_out", "action_required", None

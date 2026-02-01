@@ -6,14 +6,22 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-
 TestFramework = Literal[
-    "pytest", "unittest", "nose2",  # Python
-    "jest", "mocha", "vitest", "playwright",  # JavaScript
+    "pytest",
+    "unittest",
+    "nose2",  # Python
+    "jest",
+    "mocha",
+    "vitest",
+    "playwright",  # JavaScript
     "go_test",  # Go
-    "rspec", "minitest",  # Ruby
-    "xunit", "nunit", "mstest",  # .NET
-    "junit", "testng",  # Java
+    "rspec",
+    "minitest",  # Ruby
+    "xunit",
+    "nunit",
+    "mstest",  # .NET
+    "junit",
+    "testng",  # Java
     "cargo_test",  # Rust
     "phpunit",  # PHP
     "unknown",

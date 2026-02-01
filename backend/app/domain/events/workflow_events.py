@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Literal
 from uuid import UUID, uuid4
 
 from app.domain.events.base import DomainEvent

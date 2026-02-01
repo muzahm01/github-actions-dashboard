@@ -329,6 +329,7 @@ class PromptService:
         # Auto-detect variables from template
         if variables is None:
             import re
+
             variables = re.findall(r"\{(\w+)\}", template)
             # Remove duplicates while preserving order
             seen = set()

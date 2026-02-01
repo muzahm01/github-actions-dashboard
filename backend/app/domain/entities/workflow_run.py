@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-
 RunStatus = Literal["queued", "in_progress", "completed", "waiting"]
 RunConclusion = Literal[
     "success", "failure", "cancelled", "skipped", "timed_out", "action_required", None

@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Protocol, runtime_checkable
 
-from app.domain.entities.repository import Repository
-from app.domain.entities.workflow import Workflow
-from app.domain.entities.workflow_run import WorkflowRun
+from app.domain.entities.error_analysis import ErrorAnalysis
 from app.domain.entities.job import Job
 from app.domain.entities.log import Log
-from app.domain.entities.error_analysis import ErrorAnalysis
-from app.domain.entities.test_result import TestResult
 from app.domain.entities.notification import Notification
-from app.domain.value_objects.pagination import Pagination, PaginatedResult
+from app.domain.entities.repository import Repository
+from app.domain.entities.test_result import TestResult
+from app.domain.entities.workflow import Workflow
+from app.domain.entities.workflow_run import WorkflowRun
+from app.domain.value_objects.pagination import PaginatedResult, Pagination
 from app.domain.value_objects.time_range import TimeRange
-from app.domain.value_objects.trend_data import TrendData, TrendPeriod, MetricType
+from app.domain.value_objects.trend_data import MetricType, TrendData, TrendPeriod
 
 
 @runtime_checkable

@@ -37,13 +37,14 @@ def send_notification_task(
         Dict with send results per channel
     """
     import asyncio
+
     from app.domain.entities.notification import NotificationChannel, NotificationType
 
     async def _send():
         # Import inside to avoid circular imports
         from app.application.services.notification_service import (
-            NotificationService,
             NotificationConfig,
+            NotificationService,
         )
         from app.config import get_settings
 
@@ -78,9 +79,7 @@ def send_notification_task(
 
         # Convert string types to enums
         notif_type = NotificationType(notification_type)
-        target_channels = (
-            [NotificationChannel(c) for c in channels] if channels else None
-        )
+        target_channels = [NotificationChannel(c) for c in channels] if channels else None
 
         results = await service.notify(
             notification_type=notif_type,
@@ -103,7 +102,7 @@ def send_notification_task(
         return asyncio.run(_send())
     except Exception as e:
         logger.error(f"Failed to send notification: {e}")
-        raise self.retry(exc=e)
+        raise self.retry(exc=e) from e
 
 
 @celery_app.task(name="tasks.send_workflow_failed_notification")
@@ -122,12 +121,13 @@ def send_workflow_failed_notification_task(
     This is a convenience task that formats the notification properly.
     """
     import asyncio
+
     from app.domain.entities.notification import NotificationChannel, WorkflowFailedPayload
 
     async def _send():
         from app.application.services.notification_service import (
-            NotificationService,
             NotificationConfig,
+            NotificationService,
         )
         from app.config import get_settings
 
@@ -169,10 +169,7 @@ def send_workflow_failed_notification_task(
 
         results = await service.notify_workflow_failed(payload)
 
-        return {
-            channel.value: result.success
-            for channel, result in results.items()
-        }
+        return {channel.value: result.success for channel, result in results.items()}
 
     return asyncio.run(_send())
 
@@ -184,12 +181,13 @@ def send_daily_summary_task() -> dict:
     This task should be scheduled to run once daily.
     """
     import asyncio
-    from app.domain.entities.notification import NotificationChannel, DailySummaryPayload
+
+    from app.domain.entities.notification import DailySummaryPayload, NotificationChannel
 
     async def _send():
         from app.application.services.notification_service import (
-            NotificationService,
             NotificationConfig,
+            NotificationService,
         )
         from app.config import get_settings
 
@@ -234,10 +232,7 @@ def send_daily_summary_task() -> dict:
         service = NotificationService(configs)
         results = await service.notify_daily_summary(payload)
 
-        return {
-            channel.value: result.success
-            for channel, result in results.items()
-        }
+        return {channel.value: result.success for channel, result in results.items()}
 
     return asyncio.run(_send())
 
@@ -249,11 +244,11 @@ def process_pending_notifications_task() -> dict:
 
     async def _process():
         from app.application.services.notification_service import (
-            NotificationService,
             NotificationConfig,
+            NotificationService,
         )
-        from app.domain.entities.notification import NotificationChannel
         from app.config import get_settings
+        from app.domain.entities.notification import NotificationChannel
 
         settings = get_settings()
         configs = []

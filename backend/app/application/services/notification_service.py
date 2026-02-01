@@ -10,12 +10,12 @@ from typing import Protocol
 import httpx
 
 from app.domain.entities.notification import (
+    DailySummaryPayload,
     Notification,
     NotificationChannel,
-    NotificationType,
     NotificationConfig,
+    NotificationType,
     WorkflowFailedPayload,
-    DailySummaryPayload,
 )
 
 logger = logging.getLogger(__name__)
@@ -103,33 +103,39 @@ class SlackSender(NotificationSender):
             fields = []
             for key, value in notification.metadata.items():
                 if key not in ("run_url",):
-                    fields.append({
-                        "type": "mrkdwn",
-                        "text": f"*{key.replace('_', ' ').title()}:* {value}",
-                    })
+                    fields.append(
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*{key.replace('_', ' ').title()}:* {value}",
+                        }
+                    )
 
             if fields:
-                blocks.append({
-                    "type": "section",
-                    "fields": fields[:10],  # Max 10 fields
-                })
+                blocks.append(
+                    {
+                        "type": "section",
+                        "fields": fields[:10],  # Max 10 fields
+                    }
+                )
 
             # Add action button for run URL
             if notification.metadata.get("run_url"):
-                blocks.append({
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "View Run",
-                                "emoji": True,
-                            },
-                            "url": notification.metadata["run_url"],
-                        }
-                    ],
-                })
+                blocks.append(
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "View Run",
+                                    "emoji": True,
+                                },
+                                "url": notification.metadata["run_url"],
+                            }
+                        ],
+                    }
+                )
 
         return {
             "attachments": [{"color": color, "blocks": blocks}],
@@ -192,11 +198,13 @@ class DiscordSender(NotificationSender):
         if notification.metadata:
             for key, value in notification.metadata.items():
                 if key not in ("run_url",) and value:
-                    embed["fields"].append({
-                        "name": key.replace("_", " ").title(),
-                        "value": str(value),
-                        "inline": True,
-                    })
+                    embed["fields"].append(
+                        {
+                            "name": key.replace("_", " ").title(),
+                            "value": str(value),
+                            "inline": True,
+                        }
+                    )
 
             # Add URL if available
             if notification.metadata.get("run_url"):
@@ -391,7 +399,9 @@ class NotificationService:
         if payload.top_failures:
             message += "\n\n*Top Failing Workflows:*\n"
             for failure in payload.top_failures[:5]:
-                message += f"- {failure.get('name', 'Unknown')}: {failure.get('count', 0)} failures\n"
+                message += (
+                    f"- {failure.get('name', 'Unknown')}: {failure.get('count', 0)} failures\n"
+                )
 
         metadata = {
             "date": payload.date,
