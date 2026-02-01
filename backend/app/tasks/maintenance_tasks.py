@@ -100,11 +100,11 @@ def cleanup_old_data() -> dict:
     )
 
     async def _cleanup() -> dict:
-        from sqlalchemy import delete, select, func
+        from sqlalchemy import delete, select
 
-        from app.infrastructure.database.models.workflow_run import WorkflowRun
-        from app.infrastructure.database.models.log import Log
         from app.infrastructure.database.models.error_analysis import ErrorAnalysis
+        from app.infrastructure.database.models.log import Log
+        from app.infrastructure.database.models.workflow_run import WorkflowRun
         from app.infrastructure.database.session import get_session_factory
 
         cutoff_date = datetime.now(UTC) - timedelta(days=settings.data_retention_days)
