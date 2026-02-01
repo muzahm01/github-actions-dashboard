@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 100
     rate_limit_period: int = 60  # seconds
 
+    # Notifications
+    slack_webhook_url: str = Field(default="")
+    discord_webhook_url: str = Field(default="")
+
+    # Self-monitoring
+    self_monitoring_enabled: bool = Field(default=False)
+    self_monitoring_repo: str = Field(default="")
+
 
 @lru_cache
 def get_settings() -> Settings:
