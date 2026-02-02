@@ -3,6 +3,7 @@
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import escape_like_pattern
 from app.infrastructure.database.models.log import Log
 from app.infrastructure.database.repositories.base import BaseRepository
 
@@ -79,8 +80,14 @@ class LogRepository(BaseRepository[Log]):
 
     async def search_by_content(self, query: str, limit: int = 20) -> list[Log]:
         """Full-text search in log content."""
+        # Escape special LIKE characters to prevent injection
+        escaped_query = escape_like_pattern(query)
         # Simple ILIKE search - can be upgraded to full-text search later
-        stmt = select(Log).where(Log.log_content.ilike(f"%{query}%")).limit(limit)
+        stmt = (
+            select(Log)
+            .where(Log.log_content.ilike(f"%{escaped_query}%", escape="\\"))
+            .limit(limit)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

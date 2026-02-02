@@ -1,7 +1,13 @@
 /**
  * API client for GitHub Actions Dashboard backend
+ *
+ * Security improvements:
+ * - Uses sessionStorage instead of localStorage (cleared on tab close)
+ * - Implements secure token handling
+ * - Rate limit header parsing
+ * - CSRF protection ready
  */
-import axios, { type AxiosInstance } from 'axios'
+import axios, { type AxiosInstance, type AxiosError } from 'axios'
 import type {
   DashboardStats,
   ErrorAnalysis,
@@ -16,8 +22,20 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
 
+// Token storage key - use a non-obvious name
+const TOKEN_KEY = '_gha_sess'
+
+// Rate limit tracking
+interface RateLimitInfo {
+  limit: number
+  remaining: number
+  resetTime: number
+}
+
 class ApiClient {
   private client: AxiosInstance
+  private rateLimitInfo: RateLimitInfo | null = null
+  private onUnauthorized: (() => void) | null = null
 
   constructor() {
     this.client = axios.create({
@@ -25,28 +43,88 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Include credentials for cookie-based auth if implemented
+      withCredentials: true,
+      // Request timeout
+      timeout: 30000,
     })
 
     // Request interceptor for adding auth token
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('auth_token')
+      // Use sessionStorage instead of localStorage for better security
+      // sessionStorage is cleared when the tab is closed
+      const token = sessionStorage.getItem(TOKEN_KEY)
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
       return config
     })
 
-    // Response interceptor for error handling
+    // Response interceptor for error handling and rate limit tracking
     this.client.interceptors.response.use(
-      (response) => response,
-      (error) => {
+      (response) => {
+        // Track rate limit info from headers
+        const limit = response.headers['x-ratelimit-limit']
+        const remaining = response.headers['x-ratelimit-remaining']
+        if (limit) {
+          this.rateLimitInfo = {
+            limit: parseInt(limit, 10),
+            remaining: remaining ? parseInt(remaining, 10) : parseInt(limit, 10),
+            resetTime: Date.now() + 60000, // Assume 1 minute window
+          }
+        }
+        return response
+      },
+      (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // Handle unauthorized
-          localStorage.removeItem('auth_token')
+          // Handle unauthorized - clear token and notify
+          this.clearToken()
+          if (this.onUnauthorized) {
+            this.onUnauthorized()
+          }
+        } else if (error.response?.status === 429) {
+          // Rate limited - extract retry-after header
+          const retryAfter = error.response.headers['retry-after']
+          console.warn(`Rate limited. Retry after ${retryAfter} seconds`)
         }
         return Promise.reject(error)
       }
     )
+  }
+
+  /**
+   * Set callback for unauthorized responses
+   */
+  setUnauthorizedCallback(callback: () => void): void {
+    this.onUnauthorized = callback
+  }
+
+  /**
+   * Store authentication token securely
+   */
+  setToken(token: string): void {
+    sessionStorage.setItem(TOKEN_KEY, token)
+  }
+
+  /**
+   * Clear authentication token
+   */
+  clearToken(): void {
+    sessionStorage.removeItem(TOKEN_KEY)
+  }
+
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated(): boolean {
+    return sessionStorage.getItem(TOKEN_KEY) !== null
+  }
+
+  /**
+   * Get current rate limit info
+   */
+  getRateLimitInfo(): RateLimitInfo | null {
+    return this.rateLimitInfo
   }
 
   // Health endpoints

@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings, get_settings
@@ -17,8 +17,8 @@ router = APIRouter()
 class SearchRequest(BaseModel):
     """Request body for search."""
 
-    query: str
-    limit: int = 10
+    query: str = Field(..., min_length=1, max_length=1000, description="Search query")
+    limit: int = Field(default=10, ge=1, le=100, description="Maximum results to return")
 
 
 @router.post("/semantic")
