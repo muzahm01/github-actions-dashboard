@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     """Types of notifications."""
 
     WORKFLOW_FAILED = "workflow_failed"
@@ -18,7 +18,7 @@ class NotificationType(str, Enum):
     TREND_ALERT = "trend_alert"
 
 
-class NotificationChannel(str, Enum):
+class NotificationChannel(StrEnum):
     """Notification delivery channels."""
 
     SLACK = "slack"

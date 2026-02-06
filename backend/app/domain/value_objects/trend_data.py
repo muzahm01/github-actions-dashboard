@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 
-class TrendDirection(str, Enum):
+class TrendDirection(StrEnum):
     """Direction of trend."""
 
     UP = "up"
@@ -16,7 +16,7 @@ class TrendDirection(str, Enum):
     STABLE = "stable"
 
 
-class TrendPeriod(str, Enum):
+class TrendPeriod(StrEnum):
     """Period for trend aggregation."""
 
     HOURLY = "hourly"

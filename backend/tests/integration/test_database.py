@@ -221,7 +221,7 @@ class TestWorkflowRunRepository:
                 head_sha=f"sha{i}abc123",
                 event="push",
                 actor="developer",
-                html_url=f"https://github.com/org/repo/runs/{base_id+i}",
+                html_url=f"https://github.com/org/repo/runs/{base_id + i}",
                 workflow_id=sample_workflow.id,
             )
             db_session.add(run)

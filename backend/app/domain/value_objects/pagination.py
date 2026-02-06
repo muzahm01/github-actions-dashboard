@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
-
-T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -52,7 +49,7 @@ class Pagination:
 
 
 @dataclass(frozen=True)
-class PaginatedResult(Generic[T]):
+class PaginatedResult[T]:
     """Immutable value object for paginated results."""
 
     items: list[T]

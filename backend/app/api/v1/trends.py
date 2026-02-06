@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ from pydantic import BaseModel
 router = APIRouter()
 
 
-class TrendPeriod(str, Enum):
+class TrendPeriod(StrEnum):
     """Period for trend aggregation."""
 
     HOURLY = "hourly"
@@ -20,7 +20,7 @@ class TrendPeriod(str, Enum):
     MONTHLY = "monthly"
 
 
-class TrendDirection(str, Enum):
+class TrendDirection(StrEnum):
     """Direction of trend."""
 
     UP = "up"

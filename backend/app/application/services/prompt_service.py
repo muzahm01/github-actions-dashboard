@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Protocol
 
 logger = logging.getLogger(__name__)
 
 
-class PromptType(str, Enum):
+class PromptType(StrEnum):
     """Types of analysis prompts."""
 
     ERROR_ANALYSIS = "error_analysis"
