@@ -72,9 +72,7 @@ require_api_key = Depends(verify_api_key)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add standard security headers to every response."""
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
 
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -114,9 +112,7 @@ _rate_limit_buckets: dict[str, tuple[float, float]] = {}
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Simple per-IP token-bucket rate limiter."""
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         settings = get_settings()
         max_tokens = float(settings.rate_limit_requests)
         refill_period = float(settings.rate_limit_period)
@@ -203,6 +199,7 @@ def validate_webhook_url(url: str) -> str:
 # ---------------------------------------------------------------------------
 # ILIKE pattern escaping
 # ---------------------------------------------------------------------------
+
 
 def escape_like_pattern(value: str) -> str:
     """Escape SQL LIKE/ILIKE special characters (%, _, \\)."""

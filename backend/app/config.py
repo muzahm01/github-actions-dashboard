@@ -87,9 +87,7 @@ class Settings(BaseSettings):
     discord_webhook_url: str = Field(default="")
 
     # CORS — comma-separated allowed origins (e.g. "https://app.example.com")
-    cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"]
-    )
+    cors_origins: list[str] = Field(default=["http://localhost:3000", "http://localhost:5173"])
 
     # Trusted hosts (production) — leave empty to disable
     trusted_hosts: list[str] = Field(default_factory=list)
