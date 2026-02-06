@@ -22,7 +22,7 @@ dependencies = [
     "python-socketio>=5.16.0",
     "redis[asyncio]==5.2.1",
     "sentry-sdk[fastapi]==2.51.0",
-    "sqlalchemy==2.0.36",
+    "sqlalchemy==2.0.46",
     "uvicorn[standard]==0.40.0",
     "websockets>=16.0",
 ]
