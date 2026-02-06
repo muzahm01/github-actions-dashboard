@@ -47,12 +47,21 @@ class GitHubWebhookValidator:
     """GitHub-specific webhook validation."""
 
     def __init__(self, secret: str) -> None:
-        """Initialize with webhook secret."""
+        """Initialize with webhook secret.
+
+        Raises ValueError if the secret is empty, because an empty HMAC key
+        makes signature validation trivially bypassable.
+        """
+        if not secret:
+            raise ValueError(
+                "GITHUB_WEBHOOK_SECRET must not be empty. "
+                "Configure a strong secret to enable webhook signature validation."
+            )
         self._secret = secret.encode()
 
     def validate(self, payload: bytes, signature: str) -> bool:
         """Validate GitHub webhook signature."""
-        if not signature.startswith("sha256="):
+        if not signature or not signature.startswith("sha256="):
             return False
 
         expected = hmac.new(
@@ -101,8 +110,18 @@ class WebhookProcessor:
             )
             raise WebhookValidationError()
 
-        # Check idempotency
-        if await self._idempotency.exists(delivery_id):
+        # Atomic idempotency check-and-set (prevents TOCTOU race)
+        if hasattr(self._idempotency, "try_acquire"):
+            acquired = await self._idempotency.try_acquire(delivery_id)
+        else:
+            # Fallback for stores that don't support atomic acquire
+            if await self._idempotency.exists(delivery_id):
+                acquired = False
+            else:
+                await self._idempotency.mark_processed(delivery_id)
+                acquired = True
+
+        if not acquired:
             logger.info(
                 "Duplicate webhook received",
                 extra={"delivery_id": delivery_id},
@@ -112,9 +131,6 @@ class WebhookProcessor:
                 delivery_id=delivery_id,
                 message="Webhook already processed",
             )
-
-        # Mark as processed
-        await self._idempotency.mark_processed(delivery_id)
 
         logger.info(
             "Webhook queued for processing",
@@ -145,6 +161,17 @@ class RedisIdempotencyStore:
         return await self._redis.exists(key) > 0
 
     async def mark_processed(self, delivery_id: str) -> None:
-        """Mark delivery as processed with TTL."""
+        """Mark delivery as processed with TTL (atomic SET NX)."""
         key = f"{self._prefix}{delivery_id}"
-        await self._redis.set(key, "1", ex=self._ttl)
+        await self._redis.set(key, "1", ex=self._ttl, nx=True)
+
+    async def try_acquire(self, delivery_id: str) -> bool:
+        """Atomically check-and-set — returns True if this is the first claim.
+
+        Replaces the separate exists() + mark_processed() calls to avoid
+        TOCTOU race conditions.
+        """
+        key = f"{self._prefix}{delivery_id}"
+        # SET ... NX returns True only when the key did not already exist
+        result = await self._redis.set(key, "1", ex=self._ttl, nx=True)
+        return result is not None

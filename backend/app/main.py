@@ -1,13 +1,16 @@
 """FastAPI application entry point."""
 
 import logging
+import warnings
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.v1.security import RateLimitMiddleware, SecurityHeadersMiddleware
 from app.config import get_settings
 from app.core.exceptions import AppException
 from app.core.logging import setup_logging
@@ -23,6 +26,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.infrastructure.websocket.pubsub import pubsub_manager
 
     setup_logging(settings.log_level)
+
+    # ---- Production safety checks ----
+    if settings.environment == "production":
+        if settings.secret_key in ("change-me-in-production", ""):
+            warnings.warn(
+                "CRITICAL: SECRET_KEY is set to the default value in production! "
+                "Set a strong, random SECRET_KEY environment variable.",
+                stacklevel=2,
+            )
+        if not settings.github_webhook_secret:
+            warnings.warn(
+                "WARNING: GITHUB_WEBHOOK_SECRET is empty — webhook signature "
+                "validation is effectively disabled.",
+                stacklevel=2,
+            )
+
     logger.info(
         "Starting GitHub Actions Dashboard",
         extra={"environment": settings.environment},
@@ -58,17 +77,32 @@ def create_app() -> FastAPI:
         version="0.1.0",
         docs_url="/docs" if settings.environment != "production" else None,
         redoc_url="/redoc" if settings.environment != "production" else None,
+        openapi_url="/openapi.json" if settings.environment != "production" else None,
         lifespan=lifespan,
     )
 
-    # CORS middleware
+    # Security headers middleware (outermost — runs last on response)
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # Rate limiting middleware
+    app.add_middleware(RateLimitMiddleware)
+
+    # CORS middleware — origins configurable via CORS_ORIGINS env var
+    allowed_origins = settings.cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:5173"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-API-Key"],
     )
+
+    # Trusted host middleware (production only)
+    if settings.environment == "production" and settings.trusted_hosts:
+        app.add_middleware(
+            TrustedHostMiddleware,
+            allowed_hosts=settings.trusted_hosts,
+        )
 
     # Exception handlers
     @app.exception_handler(AppException)
@@ -80,6 +114,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        # Log the real error server-side; never expose internals to the client
         logger.exception("Unhandled exception")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

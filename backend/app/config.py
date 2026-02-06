@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import quote_plus
 
 from pydantic import Field, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,18 +33,20 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def database_url(self) -> str:
-        """Construct async database URL."""
+        """Construct async database URL (password is URL-encoded)."""
+        password = quote_plus(self.postgres_password)
         return (
-            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql+asyncpg://{self.postgres_user}:{password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def database_url_sync(self) -> str:
-        """Construct sync database URL for Alembic."""
+        """Construct sync database URL for Alembic (password is URL-encoded)."""
+        password = quote_plus(self.postgres_password)
         return (
-            f"postgresql://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql://{self.postgres_user}:{password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
@@ -82,6 +85,15 @@ class Settings(BaseSettings):
     # Notifications
     slack_webhook_url: str = Field(default="")
     discord_webhook_url: str = Field(default="")
+
+    # CORS — comma-separated allowed origins (e.g. "https://app.example.com")
+    cors_origins: list[str] = Field(default=["http://localhost:3000", "http://localhost:5173"])
+
+    # Trusted hosts (production) — leave empty to disable
+    trusted_hosts: list[str] = Field(default_factory=list)
+
+    # Maximum WebSocket connections
+    max_ws_connections: int = Field(default=100)
 
     # Self-monitoring
     self_monitoring_enabled: bool = Field(default=False)

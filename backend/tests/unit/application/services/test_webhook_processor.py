@@ -8,6 +8,7 @@ import pytest
 
 from app.application.services.webhook_processor import (
     GitHubWebhookValidator,
+    IdempotencyStore,
     ProcessResult,
     WebhookProcessor,
 )
@@ -91,7 +92,7 @@ class TestWebhookProcessor:
     @pytest.fixture
     def idempotency_store(self) -> AsyncMock:
         """Create mock idempotency store."""
-        store = AsyncMock()
+        store = AsyncMock(spec=IdempotencyStore)
         store.exists.return_value = False
         return store
 

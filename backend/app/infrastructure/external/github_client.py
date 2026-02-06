@@ -109,14 +109,18 @@ class GitHubClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            logger.error(f"GitHub API error: {e.response.status_code} - {e.response.text}")
+            # Log status code only — never log response body (may contain tokens/secrets)
+            logger.error(
+                "GitHub API error",
+                extra={"status_code": e.response.status_code, "path": path},
+            )
             raise GitHubAPIError(
                 f"GitHub API error: {e.response.status_code}",
                 status_code=e.response.status_code,
             ) from e
-        except httpx.RequestError as e:
-            logger.error(f"GitHub API request failed: {e}")
-            raise GitHubAPIError(f"GitHub API request failed: {e}") from e
+        except httpx.RequestError as exc:
+            logger.error("GitHub API request failed", extra={"path": path})
+            raise GitHubAPIError("GitHub API request failed") from exc
 
     async def get_repository(self, owner: str, repo: str) -> GitHubRepository:
         """Get repository details."""

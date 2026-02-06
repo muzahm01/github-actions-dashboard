@@ -9,5 +9,9 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  }
+  },
+  build: {
+    // Disable source maps in production to prevent source code exposure
+    sourcemap: false,
+  },
 })
