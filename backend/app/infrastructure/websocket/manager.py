@@ -1,25 +1,55 @@
 """WebSocket connection manager for real-time updates."""
 
 import logging
+import secrets
 from typing import Any
 
 from fastapi import WebSocket
+from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
+
+# Default max connections — can be overridden from config
+MAX_WS_CONNECTIONS = 100
 
 
 class ConnectionManager:
     """Manage WebSocket connections and broadcasts."""
 
-    def __init__(self) -> None:
+    def __init__(self, max_connections: int = MAX_WS_CONNECTIONS) -> None:
         """Initialize connection manager."""
         self.active_connections: list[WebSocket] = []
+        self._max_connections = max_connections
 
-    async def connect(self, websocket: WebSocket) -> None:
-        """Accept and store a new WebSocket connection."""
+    async def connect(self, websocket: WebSocket, token: str | None = None) -> bool:
+        """Accept and store a new WebSocket connection.
+
+        Returns True if the connection was accepted, False otherwise.
+        Enforces a maximum connection limit and optional token auth.
+        """
+        # Enforce connection limit to prevent resource exhaustion
+        if len(self.active_connections) >= self._max_connections:
+            await websocket.close(code=1013)  # Try Again Later
+            logger.warning("WebSocket rejected: max connections reached")
+            return False
+
+        # Optional token auth in production
+        from app.config import get_settings
+
+        settings = get_settings()
+        if settings.environment == "production" and settings.secret_key not in (
+            "change-me-in-production",
+            "",
+        ):
+            if not token or not secrets.compare_digest(token, settings.secret_key):
+                await websocket.close(code=1008)  # Policy Violation
+                logger.warning("WebSocket rejected: invalid or missing token")
+                return False
+
         await websocket.accept()
         self.active_connections.append(websocket)
         logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+        return True
 
     def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket connection."""

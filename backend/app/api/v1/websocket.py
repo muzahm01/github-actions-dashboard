@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from app.infrastructure.websocket.manager import connection_manager
 
@@ -12,7 +12,10 @@ router = APIRouter()
 
 
 @router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:
+async def websocket_endpoint(
+    websocket: WebSocket,
+    token: str | None = Query(default=None),
+) -> None:
     """
     WebSocket endpoint for real-time updates.
 
@@ -26,8 +29,12 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     - Client sends: {"type": "ping"} to keep connection alive
     - Server sends: {"type": "pong"} in response
     - Server broadcasts: Various event types with relevant data
+
+    In production, supply ?token=<api-key> for authentication.
     """
-    await connection_manager.connect(websocket)
+    connected = await connection_manager.connect(websocket, token=token)
+    if not connected:
+        return
     try:
         while True:
             # Receive messages from client (mostly for ping/pong)

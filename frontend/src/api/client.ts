@@ -22,16 +22,22 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
+      timeout: 30000, // 30-second timeout to prevent hanging requests
       headers: {
         'Content-Type': 'application/json',
       },
     })
 
-    // Request interceptor for adding auth token
+    // Request interceptor for adding auth credentials
     this.client.interceptors.request.use((config) => {
       const token = localStorage.getItem('auth_token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
+      }
+      // Also send API key header if configured
+      const apiKey = localStorage.getItem('api_key')
+      if (apiKey) {
+        config.headers['X-API-Key'] = apiKey
       }
       return config
     })

@@ -1,0 +1,29 @@
+# Security: prevent secrets and unnecessary files from being copied into the image
+.env
+.env.*
+*.env
+
+# Git
+.git
+.gitignore
+
+# Dependencies (will be installed fresh in the container)
+node_modules
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+
+# Documentation
+*.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose*.yml
+nginx.conf

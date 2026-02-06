@@ -78,9 +78,17 @@ class LogRepository(BaseRepository[Log]):
         return logs_with_scores
 
     async def search_by_content(self, query: str, limit: int = 20) -> list[Log]:
-        """Full-text search in log content."""
-        # Simple ILIKE search - can be upgraded to full-text search later
-        stmt = select(Log).where(Log.log_content.ilike(f"%{query}%")).limit(limit)
+        """Full-text search in log content.
+
+        LIKE wildcards (%, _) in the query are escaped to prevent pattern injection.
+        """
+        # Escape SQL LIKE special characters before embedding in the pattern
+        safe_query = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        stmt = (
+            select(Log)
+            .where(Log.log_content.ilike(f"%{safe_query}%"))
+            .limit(min(limit, 100))  # Hard cap
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

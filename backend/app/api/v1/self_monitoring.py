@@ -182,12 +182,12 @@ async def _check_database() -> HealthCheckResult:
             latency_ms=latency,
             details={"pool_size": 10, "active_connections": 2},
         )
-    except Exception as e:
+    except Exception:
         latency = (time.perf_counter() - start) * 1000
         return HealthCheckResult(
             component="database",
             status="error",
-            message=f"Database connection failed: {str(e)}",
+            message="Database connection failed",
             latency_ms=latency,
         )
 
@@ -205,14 +205,13 @@ async def _check_redis() -> HealthCheckResult:
             status="ok",
             message="Redis connection successful",
             latency_ms=latency,
-            details={"connected_clients": 5},
         )
-    except Exception as e:
+    except Exception:
         latency = (time.perf_counter() - start) * 1000
         return HealthCheckResult(
             component="redis",
             status="error",
-            message=f"Redis connection failed: {str(e)}",
+            message="Redis connection failed",
             latency_ms=latency,
         )
 
@@ -230,13 +229,12 @@ async def _check_github_api() -> HealthCheckResult:
             status="ok",
             message="GitHub API accessible",
             latency_ms=latency,
-            details={"rate_limit_remaining": 4500, "rate_limit_reset": "2024-01-01T00:00:00Z"},
         )
-    except Exception as e:
+    except Exception:
         latency = (time.perf_counter() - start) * 1000
         return HealthCheckResult(
             component="github_api",
             status="warning",
-            message=f"GitHub API check failed: {str(e)}",
+            message="GitHub API check failed",
             latency_ms=latency,
         )

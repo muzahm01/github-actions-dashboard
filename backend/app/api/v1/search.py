@@ -1,9 +1,10 @@
 """Search endpoints."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings, get_settings
@@ -11,14 +12,15 @@ from app.infrastructure.database.repositories.log_repo import LogRepository
 from app.infrastructure.database.session import get_db
 from app.infrastructure.external.embedding_client import EmbeddingClient
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 class SearchRequest(BaseModel):
     """Request body for search."""
 
-    query: str
-    limit: int = 10
+    query: str = Field(..., min_length=1, max_length=1000)
+    limit: int = Field(default=10, ge=1, le=100)
 
 
 @router.post("/semantic")
@@ -38,10 +40,11 @@ async def semantic_search(
     try:
         query_embedding = await embedding_client.generate_embedding(request.query)
     except Exception as e:
+        logger.error("Failed to generate embedding for search", exc_info=e)
         return {
             "query": request.query,
             "results": [],
-            "error": f"Failed to generate embedding: {str(e)}",
+            "error": "Failed to generate embedding. Please try again later.",
         }
     finally:
         await embedding_client.close()

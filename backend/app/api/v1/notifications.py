@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from app.api.v1.security import validate_webhook_url
 from app.domain.entities.notification import NotificationChannel, NotificationType
 
 router = APIRouter()
@@ -14,10 +15,16 @@ class NotificationConfigCreate(BaseModel):
     """Request model for creating notification config."""
 
     channel: NotificationChannel
-    webhook_url: str = Field(..., min_length=1)
+    webhook_url: str = Field(..., min_length=1, max_length=2048)
     enabled: bool = True
     events: list[NotificationType] = Field(default_factory=list)
     repository_filter: list[str] = Field(default_factory=list)
+
+    @field_validator("webhook_url")
+    @classmethod
+    def webhook_url_must_be_safe(cls, v: str) -> str:
+        """Block internal/private network URLs to prevent SSRF."""
+        return validate_webhook_url(v)
 
 
 class NotificationConfigResponse(BaseModel):

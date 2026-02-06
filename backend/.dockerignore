@@ -1,0 +1,43 @@
+# Security: prevent secrets and unnecessary files from being copied into the image
+.env
+.env.*
+*.env
+
+# Git
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv
+venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Tests (not needed in production image)
+tests/
+.pytest_cache
+.coverage
+htmlcov/
+coverage.xml
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose*.yml
