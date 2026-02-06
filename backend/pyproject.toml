@@ -32,7 +32,7 @@ dev = [
     "bandit==1.9.3",
     "factory-boy==3.3.1",
     "faker==40.1.2",
-    "freezegun==1.4.0",
+    "freezegun==1.5.5",
     "hypothesis==6.151.2",
     "mypy==1.19.1",
     "pre-commit==4.0.1",
