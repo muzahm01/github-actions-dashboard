@@ -5,7 +5,6 @@ import secrets
 from typing import Any
 
 from fastapi import WebSocket
-from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +36,14 @@ class ConnectionManager:
         from app.config import get_settings
 
         settings = get_settings()
-        if settings.environment == "production" and settings.secret_key not in (
-            "change-me-in-production",
-            "",
+        if (
+            settings.environment == "production"
+            and settings.secret_key not in ("change-me-in-production", "")
+            and (not token or not secrets.compare_digest(token, settings.secret_key))
         ):
-            if not token or not secrets.compare_digest(token, settings.secret_key):
-                await websocket.close(code=1008)  # Policy Violation
-                logger.warning("WebSocket rejected: invalid or missing token")
-                return False
+            await websocket.close(code=1008)  # Policy Violation
+            logger.warning("WebSocket rejected: invalid or missing token")
+            return False
 
         await websocket.accept()
         self.active_connections.append(websocket)

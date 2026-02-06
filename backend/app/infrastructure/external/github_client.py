@@ -118,9 +118,9 @@ class GitHubClient:
                 f"GitHub API error: {e.response.status_code}",
                 status_code=e.response.status_code,
             ) from e
-        except httpx.RequestError:
+        except httpx.RequestError as exc:
             logger.error("GitHub API request failed", extra={"path": path})
-            raise GitHubAPIError("GitHub API request failed")
+            raise GitHubAPIError("GitHub API request failed") from exc
 
     async def get_repository(self, owner: str, repo: str) -> GitHubRepository:
         """Get repository details."""
