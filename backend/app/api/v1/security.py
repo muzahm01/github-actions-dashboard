@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,20 +28,14 @@ _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 async def verify_api_key(
     api_key: Annotated[str | None, Security(_api_key_header)] = None,
+    settings: Settings = Depends(get_settings),
 ) -> str:
     """Validate the X-API-Key header against the configured secret_key.
 
-    When the application runs in *development* or *testing* mode **and** no
-    SECRET_KEY has been explicitly configured, authentication is skipped so
-    that local development stays frictionless.
+    Requires ENABLE_DEV_AUTH_BYPASS=true in dev/testing to skip authentication.
     """
-    settings = get_settings()
-
-    # In dev/testing with default secret, allow unauthenticated access
-    if settings.environment in ("development", "testing") and settings.secret_key in (
-        "change-me-in-production",
-        "",
-    ):
+    # Dev/testing bypass requires explicit opt-in via ENABLE_DEV_AUTH_BYPASS=true
+    if settings.environment in ("development", "testing") and settings.enable_dev_auth_bypass:
         return "dev-bypass"
 
     if not api_key:
@@ -102,47 +96,101 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 # ---------------------------------------------------------------------------
-# Rate-limiting middleware (simple in-memory token bucket per IP)
+# Request body size limiting middleware
 # ---------------------------------------------------------------------------
 
-# Stores: ip -> (tokens, last_refill_timestamp)
+
+class RequestBodySizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject requests whose Content-Length exceeds the configured maximum."""
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        settings = get_settings()
+        max_size = settings.max_request_body_size
+
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > max_size:
+            return Response(
+                content='{"detail":"Request body too large"}',
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                media_type="application/json",
+            )
+
+        return await call_next(request)
+
+
+# ---------------------------------------------------------------------------
+# Rate-limiting middleware (Redis-backed with in-memory fallback)
+# ---------------------------------------------------------------------------
+
+# In-memory fallback stores: ip -> (tokens, last_refill_timestamp)
 _rate_limit_buckets: dict[str, tuple[float, float]] = {}
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple per-IP token-bucket rate limiter."""
+    """Per-IP rate limiter using Redis sliding window with in-memory fallback."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         settings = get_settings()
-        max_tokens = float(settings.rate_limit_requests)
-        refill_period = float(settings.rate_limit_period)
+        max_requests = settings.rate_limit_requests
+        period = settings.rate_limit_period
 
         # Skip rate limiting for health/metrics endpoints
         if request.url.path in ("/health", "/health/ready", "/health/live", "/metrics"):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
-        now = time.monotonic()
 
+        is_limited = await self._check_redis_rate_limit(client_ip, max_requests, period)
+
+        if is_limited:
+            return Response(
+                content='{"detail":"Rate limit exceeded"}',
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                media_type="application/json",
+                headers={"Retry-After": str(period)},
+            )
+
+        return await call_next(request)
+
+    @staticmethod
+    async def _check_redis_rate_limit(client_ip: str, max_requests: int, period: int) -> bool:
+        """Try Redis first; fall back to in-memory on connection failure."""
+        try:
+            import redis.asyncio as aioredis
+
+            settings = get_settings()
+            r = aioredis.from_url(str(settings.redis_url), decode_responses=True)
+            try:
+                key = f"ratelimit:{client_ip}"
+                current = await r.incr(key)
+                if current == 1:
+                    await r.expire(key, period)
+                return int(current) > max_requests
+            finally:
+                await r.aclose()
+        except Exception:
+            # Fallback to in-memory token bucket when Redis is unavailable
+            return RateLimitMiddleware._check_memory_rate_limit(
+                client_ip, float(max_requests), float(period)
+            )
+
+    @staticmethod
+    def _check_memory_rate_limit(client_ip: str, max_tokens: float, refill_period: float) -> bool:
+        """In-memory token-bucket fallback."""
+        now = time.monotonic()
         tokens, last_refill = _rate_limit_buckets.get(client_ip, (max_tokens, now))
 
-        # Refill tokens based on elapsed time
         elapsed = now - last_refill
         tokens = min(max_tokens, tokens + elapsed * (max_tokens / refill_period))
         last_refill = now
 
         if tokens < 1.0:
             _rate_limit_buckets[client_ip] = (tokens, last_refill)
-            return Response(
-                content='{"detail":"Rate limit exceeded"}',
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                media_type="application/json",
-                headers={"Retry-After": str(int(refill_period))},
-            )
+            return True
 
         tokens -= 1.0
         _rate_limit_buckets[client_ip] = (tokens, last_refill)
-        return await call_next(request)
+        return False
 
 
 # ---------------------------------------------------------------------------

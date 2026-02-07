@@ -73,7 +73,11 @@ class Settings(BaseSettings):
 
     # Application
     secret_key: str = Field(default="change-me-in-production")
+    enable_dev_auth_bypass: bool = Field(default=False)
     api_v1_prefix: str = "/api/v1"
+
+    # Request body size limit (bytes) — default 10 MB
+    max_request_body_size: int = Field(default=10 * 1024 * 1024)
 
     # Data retention
     data_retention_days: int = 30

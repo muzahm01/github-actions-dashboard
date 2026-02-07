@@ -32,15 +32,14 @@ class ConnectionManager:
             logger.warning("WebSocket rejected: max connections reached")
             return False
 
-        # Optional token auth in production
+        # Token auth — skip only when dev auth bypass is explicitly enabled
         from app.config import get_settings
 
         settings = get_settings()
-        if (
-            settings.environment == "production"
-            and settings.secret_key not in ("change-me-in-production", "")
-            and (not token or not secrets.compare_digest(token, settings.secret_key))
-        ):
+        skip_auth = (
+            settings.environment in ("development", "testing") and settings.enable_dev_auth_bypass
+        )
+        if not skip_auth and (not token or not secrets.compare_digest(token, settings.secret_key)):
             await websocket.close(code=1008)  # Policy Violation
             logger.warning("WebSocket rejected: invalid or missing token")
             return False

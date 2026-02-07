@@ -27,6 +27,7 @@ def test_settings() -> Settings:
         github_webhook_secret="test-webhook-secret",
         anthropic_api_key="test-anthropic-key",
         openai_api_key="test-openai-key",
+        enable_dev_auth_bypass=True,
     )
 
 

@@ -1,6 +1,7 @@
 """LLM client for error analysis using Claude."""
 
 import logging
+import re
 from dataclasses import asdict, dataclass
 
 from anthropic import AsyncAnthropic
@@ -25,35 +26,49 @@ class ErrorAnalysisResult:
     tokens_used: int
 
 
-ERROR_ANALYSIS_PROMPT = """You are an expert CI/CD debugger analyzing a GitHub Actions workflow failure.
+# System prompt containing the trusted instructions — separated from user data
+_SYSTEM_PROMPT = (
+    "You are an expert CI/CD debugger analyzing a GitHub Actions workflow failure. "
+    "The user will provide an error log along with metadata (test framework name "
+    "and job name). Analyze the log and respond with ONLY valid JSON in this format:\n"
+    '{"root_cause": "detailed explanation", '
+    '"error_summary": "brief 1-2 sentence summary", '
+    '"suggested_fixes": ["fix 1", "fix 2"], '
+    '"prevention_tips": ["tip 1", "tip 2"], '
+    '"confidence_score": 0.85, '
+    '"related_documentation": ["https://docs.example.com/..."]}\n\n'
+    "Only respond with valid JSON, no additional text."
+)
 
-Analyze the following error log and provide:
-1. Root cause analysis - what went wrong and why
-2. A brief error summary (1-2 sentences)
-3. Suggested fixes (actionable steps to resolve)
-4. Prevention tips (how to avoid this in the future)
-5. Confidence score (0.0 to 1.0) based on how certain you are
-6. Related documentation links if applicable
+_SUMMARY_SYSTEM_PROMPT = (
+    "You are a CI/CD expert. The user will provide test failure data. "
+    "Summarize the failures in 2-3 sentences, identifying common patterns. "
+    "Focus on the main issues."
+)
 
-Error Log:
-```
-{log_content}
-```
+# Maximum allowed length for metadata fields to prevent abuse
+_MAX_METADATA_LENGTH = 200
 
-Test Framework: {framework}
-Job Name: {job_name}
 
-Respond in this exact JSON format:
-{{
-    "root_cause": "detailed explanation of what caused the error",
-    "error_summary": "brief 1-2 sentence summary",
-    "suggested_fixes": ["fix 1", "fix 2", ...],
-    "prevention_tips": ["tip 1", "tip 2", ...],
-    "confidence_score": 0.85,
-    "related_documentation": ["https://docs.example.com/..."]
-}}
+def _sanitize_metadata(value: str) -> str:
+    """Sanitize user-controlled metadata to mitigate prompt injection.
 
-Only respond with valid JSON, no additional text."""
+    Strips control characters, limits length, and removes patterns that could
+    be used to manipulate LLM behaviour (e.g. fake system/instruction blocks).
+    """
+    # Limit length
+    value = value[:_MAX_METADATA_LENGTH]
+    # Remove control characters except newlines and tabs
+    value = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", value)
+    # Strip patterns that look like prompt injection attempts
+    value = re.sub(
+        r"(system\s*:|<\s*/?system\s*>|INSTRUCTION|IGNORE\s+PREVIOUS|"
+        r"forget\s+(all|everything|previous)|you\s+are\s+now)",
+        "[FILTERED]",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return value.strip()
 
 
 class ClaudeClient:
@@ -107,17 +122,28 @@ class ClaudeClient:
             half = max_log_length // 2
             truncated_log = log_content[:half] + "\n\n... [truncated] ...\n\n" + log_content[-half:]
 
-        prompt = ERROR_ANALYSIS_PROMPT.format(
-            log_content=truncated_log,
-            framework=framework,
-            job_name=job_name,
+        # Sanitize user-controlled metadata to prevent prompt injection
+        safe_framework = _sanitize_metadata(framework)
+        safe_job_name = _sanitize_metadata(job_name)
+
+        # Use structured message boundaries: system prompt for instructions,
+        # user message for untrusted data wrapped in XML tags
+        user_message = (
+            "<error_log>\n"
+            f"{truncated_log}\n"
+            "</error_log>\n\n"
+            f"<metadata>\n"
+            f"Test Framework: {safe_framework}\n"
+            f"Job Name: {safe_job_name}\n"
+            f"</metadata>"
         )
 
         try:
             message = await client.messages.create(
                 model=self._model,
                 max_tokens=self._max_tokens,
-                messages=[{"role": "user", "content": prompt}],
+                system=_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_message}],
             )
 
             # Extract text content
@@ -129,8 +155,6 @@ class ClaudeClient:
                 result = json.loads(content)
             except json.JSONDecodeError:
                 # Try to extract JSON from response
-                import re
-
                 json_match = re.search(r"\{[\s\S]*\}", content)
                 if json_match:
                     result = json.loads(json_match.group())
@@ -155,32 +179,43 @@ class ClaudeClient:
 
             return analysis_result
 
+        except LLMError:
+            raise
         except Exception as e:
-            logger.error(f"Claude API error: {e}")
-            raise LLMError(f"Claude API error: {e}", provider="claude") from e
+            logger.error(
+                "Claude API error",
+                extra={"error_type": type(e).__name__},
+            )
+            raise LLMError(f"Claude API error: {type(e).__name__}", provider="claude") from e
 
-    async def summarize_failures(self, failures: list[dict], max_failures: int = 10) -> str:
+    async def summarize_failures(
+        self, failures: list[dict[str, str]], max_failures: int = 10
+    ) -> str:
         """Summarize multiple test failures."""
         client = self._get_client()
 
-        failures_text = "\n\n".join(
-            f"Test: {f.get('test_name', 'unknown')}\nError: {f.get('error_message', 'unknown')}"
-            for f in failures[:max_failures]
-        )
+        # Sanitize failure data before including in prompt
+        sanitized_parts: list[str] = []
+        for f in failures[:max_failures]:
+            test_name = _sanitize_metadata(f.get("test_name", "unknown"))
+            error_msg = _sanitize_metadata(f.get("error_message", "unknown"))
+            sanitized_parts.append(f"Test: {test_name}\nError: {error_msg}")
 
-        prompt = f"""Summarize these test failures in 2-3 sentences, identifying common patterns:
+        failures_text = "\n\n".join(sanitized_parts)
 
-{failures_text}
-
-Provide a concise summary focusing on the main issues."""
+        user_message = f"<test_failures>\n{failures_text}\n</test_failures>"
 
         try:
             message = await client.messages.create(
                 model=self._model,
                 max_tokens=500,
-                messages=[{"role": "user", "content": prompt}],
+                system=_SUMMARY_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_message}],
             )
             return message.content[0].text
         except Exception as e:
-            logger.error(f"Claude API error: {e}")
-            raise LLMError(f"Claude API error: {e}", provider="claude") from e
+            logger.error(
+                "Claude API error",
+                extra={"error_type": type(e).__name__},
+            )
+            raise LLMError(f"Claude API error: {type(e).__name__}", provider="claude") from e
