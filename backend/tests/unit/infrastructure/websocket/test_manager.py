@@ -1,6 +1,6 @@
 """Tests for WebSocket connection manager."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -13,12 +13,24 @@ def connection_manager():
     return ConnectionManager()
 
 
+@pytest.fixture(autouse=True)
+def _mock_settings():
+    """Patch get_settings to enable dev auth bypass for WebSocket tests."""
+    mock_settings = MagicMock()
+    mock_settings.environment = "testing"
+    mock_settings.enable_dev_auth_bypass = True
+    mock_settings.secret_key = "test-secret"
+    with patch("app.config.get_settings", return_value=mock_settings):
+        yield
+
+
 @pytest.fixture
 def mock_websocket():
     """Create a mock WebSocket connection."""
     websocket = MagicMock()
     websocket.accept = AsyncMock()
     websocket.send_json = AsyncMock()
+    websocket.close = AsyncMock()
     return websocket
 
 
@@ -81,10 +93,12 @@ async def test_broadcast_to_all_connections(connection_manager):
     ws1 = MagicMock()
     ws1.accept = AsyncMock()
     ws1.send_json = AsyncMock()
+    ws1.close = AsyncMock()
 
     ws2 = MagicMock()
     ws2.accept = AsyncMock()
     ws2.send_json = AsyncMock()
+    ws2.close = AsyncMock()
 
     await connection_manager.connect(ws1)
     await connection_manager.connect(ws2)
@@ -102,10 +116,12 @@ async def test_broadcast_handles_disconnected_clients(connection_manager):
     ws1 = MagicMock()
     ws1.accept = AsyncMock()
     ws1.send_json = AsyncMock()
+    ws1.close = AsyncMock()
 
     ws2 = MagicMock()
     ws2.accept = AsyncMock()
     ws2.send_json = AsyncMock(side_effect=Exception("Connection lost"))
+    ws2.close = AsyncMock()
 
     await connection_manager.connect(ws1)
     await connection_manager.connect(ws2)

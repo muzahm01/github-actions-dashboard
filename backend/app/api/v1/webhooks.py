@@ -32,6 +32,14 @@ async def github_webhook(
     Processes workflow_run and workflow_job events.
     Returns 202 Accepted and queues for async processing.
     """
+    # Reject early when webhook secret is not configured
+    if not settings.github_webhook_secret:
+        logger.error("Webhook received but GITHUB_WEBHOOK_SECRET is not configured")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Webhook validation is not configured"},
+        )
+
     payload = await request.body()
 
     # Create validator using injected settings

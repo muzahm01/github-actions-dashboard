@@ -1,7 +1,6 @@
 """FastAPI application entry point."""
 
 import logging
-import warnings
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -10,7 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1.security import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.api.v1.security import (
+    RateLimitMiddleware,
+    RequestBodySizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.config import get_settings
 from app.core.exceptions import AppException
 from app.core.logging import setup_logging
@@ -29,17 +32,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ---- Production safety checks ----
     if settings.environment == "production":
+        _insecure: list[str] = []
         if settings.secret_key in ("change-me-in-production", ""):
-            warnings.warn(
-                "CRITICAL: SECRET_KEY is set to the default value in production! "
-                "Set a strong, random SECRET_KEY environment variable.",
-                stacklevel=2,
-            )
+            _insecure.append("SECRET_KEY is set to the default value")
+        if settings.postgres_password in ("gha_secret", ""):
+            _insecure.append("POSTGRES_PASSWORD is set to the default value")
         if not settings.github_webhook_secret:
-            warnings.warn(
-                "WARNING: GITHUB_WEBHOOK_SECRET is empty — webhook signature "
-                "validation is effectively disabled.",
-                stacklevel=2,
+            _insecure.append("GITHUB_WEBHOOK_SECRET is empty")
+        if _insecure:
+            raise SystemExit(
+                "FATAL: Refusing to start with insecure defaults in production. "
+                f"Fix the following: {'; '.join(_insecure)}"
             )
 
     logger.info(
@@ -83,6 +86,9 @@ def create_app() -> FastAPI:
 
     # Security headers middleware (outermost — runs last on response)
     app.add_middleware(SecurityHeadersMiddleware)
+
+    # Request body size limit middleware
+    app.add_middleware(RequestBodySizeLimitMiddleware)
 
     # Rate limiting middleware
     app.add_middleware(RateLimitMiddleware)
