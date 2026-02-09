@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from app.domain.events.base import DomainEvent
@@ -28,7 +29,7 @@ class WorkflowRunStarted(DomainEvent):
         """Return event type identifier."""
         return "workflow_run.started"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "run_id": self.run_id,
@@ -58,7 +59,7 @@ class WorkflowRunCompleted(DomainEvent):
         """Return event type identifier."""
         return "workflow_run.completed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "run_id": self.run_id,
@@ -90,7 +91,7 @@ class WorkflowRunFailed(DomainEvent):
         """Return event type identifier."""
         return "workflow_run.failed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "run_id": self.run_id,
@@ -122,7 +123,7 @@ class JobCompleted(DomainEvent):
         """Return event type identifier."""
         return "job.completed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "job_id": self.job_id,
@@ -150,7 +151,7 @@ class JobFailed(DomainEvent):
         """Return event type identifier."""
         return "job.failed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "job_id": self.job_id,

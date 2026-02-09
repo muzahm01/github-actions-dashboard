@@ -10,6 +10,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestGitHubWebhook:
     """Test suite for GitHub webhook endpoint."""
 

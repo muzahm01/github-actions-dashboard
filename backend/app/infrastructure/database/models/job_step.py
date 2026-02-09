@@ -21,7 +21,7 @@ class JobStep(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("job_id", "number", name="uq_job_step_number"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     conclusion: Mapped[str | None] = mapped_column(String(50))

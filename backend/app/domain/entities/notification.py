@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 
 class NotificationType(str, Enum):
@@ -51,7 +51,7 @@ class Notification:
     status: NotificationStatus
     title: str
     message: str
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     retry_count: int = 0
     max_retries: int = 3
     sent_at: datetime | None = None
@@ -64,7 +64,7 @@ class Notification:
         channel: NotificationChannel,
         title: str,
         message: str,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Notification:
         """Create a new notification entity."""
         return cls(
@@ -123,5 +123,5 @@ class DailySummaryPayload:
     successful_runs: int
     failed_runs: int
     success_rate: float
-    top_failures: list[dict] = field(default_factory=list)
+    top_failures: list[dict[str, Any]] = field(default_factory=list)
     repositories_monitored: int = 0

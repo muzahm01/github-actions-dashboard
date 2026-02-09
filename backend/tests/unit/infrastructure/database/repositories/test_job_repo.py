@@ -7,6 +7,8 @@ import pytest
 from app.infrastructure.database.repositories.job_repo import JobRepository
 
 
+pytestmark = pytest.mark.unit
+
 class TestJobRepository:
     """Tests for JobRepository."""
 

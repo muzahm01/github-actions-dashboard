@@ -1,6 +1,7 @@
 """Repository for workflow runs."""
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,7 +81,7 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def upsert_by_github_id(self, run_data: dict) -> WorkflowRun:
+    async def upsert_by_github_id(self, run_data: dict[str, Any]) -> WorkflowRun:
         """Insert or update workflow run by GitHub ID."""
         github_id = run_data["github_id"]
         existing = await self.get_by_github_id(github_id)

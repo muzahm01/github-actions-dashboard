@@ -5,6 +5,7 @@ import hashlib
 import logging
 import re
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from app.application.services.test_result_parser import TestResultParserService
 from app.config import get_settings
@@ -40,12 +41,12 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(bind=True, max_retries=3)
-def sync_repository(self, owner: str, repo: str) -> dict:  # type: ignore[no-untyped-def]
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360)
+def sync_repository(self, owner: str, repo: str) -> dict[str, Any]:  # type: ignore[no-untyped-def]
     """Sync a single repository's workflows and runs."""
     logger.info(f"Syncing repository: {owner}/{repo}")
 
-    async def _sync() -> dict:
+    async def _sync() -> dict[str, Any]:
         client = GitHubClient(settings)
         try:
             # Get repository info
@@ -118,12 +119,12 @@ def _extract_error_content(log_content: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-@celery_app.task(bind=True, max_retries=3)
-def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict:  # type: ignore[no-untyped-def]
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360)
+def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict[str, Any]:  # type: ignore[no-untyped-def]
     """Process a workflow run - fetch jobs and logs, parse test results, save to database."""
     logger.info(f"Processing workflow run: {owner}/{repo}#{run_id}")
 
-    async def _process() -> dict:
+    async def _process() -> dict[str, Any]:
         client = GitHubClient(settings)
         session_factory = get_session_factory()
 
@@ -274,12 +275,12 @@ def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict:  # t
         raise self.retry(exc=e, countdown=60) from e
 
 
-@celery_app.task
-def sync_all_workflows() -> dict:
+@celery_app.task(soft_time_limit=600, time_limit=660)
+def sync_all_workflows() -> dict[str, Any]:
     """Sync all configured repositories (scheduled task)."""
     logger.info("Starting scheduled workflow sync")
 
-    async def _sync_all() -> dict:
+    async def _sync_all() -> dict[str, Any]:
         session_factory = get_session_factory()
 
         async with session_factory() as session:
@@ -306,12 +307,12 @@ def sync_all_workflows() -> dict:
     return run_async(_sync_all())
 
 
-@celery_app.task
-def cleanup_old_data() -> dict:
+@celery_app.task(soft_time_limit=300, time_limit=360)
+def cleanup_old_data() -> dict[str, Any]:
     """Clean up old workflow data based on retention policy."""
     logger.info(f"Cleaning up data older than {settings.data_retention_days} days")
 
-    async def _cleanup() -> dict:
+    async def _cleanup() -> dict[str, Any]:
         session_factory = get_session_factory()
         cutoff_date = datetime.now(UTC) - timedelta(days=settings.data_retention_days)
 

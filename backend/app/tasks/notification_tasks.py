@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
+from typing import Any
 
 from app.tasks.celery_app import celery_app
 
@@ -15,15 +16,17 @@ logger = logging.getLogger(__name__)
     bind=True,
     max_retries=3,
     default_retry_delay=60,
+    soft_time_limit=60,
+    time_limit=90,
 )
 def send_notification_task(
     self,
     notification_type: str,
     title: str,
     message: str,
-    metadata: dict | None = None,
+    metadata: dict[str, Any] | None = None,
     channels: list[str] | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Send notification via configured channels.
 
     Args:
@@ -105,7 +108,7 @@ def send_notification_task(
         raise self.retry(exc=e) from e
 
 
-@celery_app.task(name="tasks.send_workflow_failed_notification")
+@celery_app.task(name="tasks.send_workflow_failed_notification", soft_time_limit=60, time_limit=90)
 def send_workflow_failed_notification_task(
     repository_name: str,
     workflow_name: str,
@@ -115,7 +118,7 @@ def send_workflow_failed_notification_task(
     actor: str,
     run_url: str = "",
     failure_reason: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Send workflow failed notification.
 
     This is a convenience task that formats the notification properly.
@@ -174,8 +177,8 @@ def send_workflow_failed_notification_task(
     return asyncio.run(_send())
 
 
-@celery_app.task(name="tasks.send_daily_summary")
-def send_daily_summary_task() -> dict:
+@celery_app.task(name="tasks.send_daily_summary", soft_time_limit=120, time_limit=180)
+def send_daily_summary_task() -> dict[str, Any]:
     """Send daily summary notification.
 
     This task should be scheduled to run once daily.
@@ -237,8 +240,8 @@ def send_daily_summary_task() -> dict:
     return asyncio.run(_send())
 
 
-@celery_app.task(name="tasks.process_pending_notifications")
-def process_pending_notifications_task() -> dict:
+@celery_app.task(name="tasks.process_pending_notifications", soft_time_limit=120, time_limit=180)
+def process_pending_notifications_task() -> dict[str, Any]:
     """Process pending/failed notifications for retry."""
     import asyncio
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 
 class SearchType(str, Enum):
@@ -83,7 +83,7 @@ class SearchResult:
     title: str
     description: str = ""
     score: float = 0.0
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_log(

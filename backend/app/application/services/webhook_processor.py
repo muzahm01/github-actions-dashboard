@@ -6,7 +6,7 @@ import hashlib
 import hmac
 import logging
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.core.exceptions import WebhookValidationError
 
@@ -20,7 +20,7 @@ class WebhookEvent:
     event_type: str
     action: str
     delivery_id: str
-    payload: dict
+    payload: dict[str, Any]
 
 
 class WebhookValidator(Protocol):

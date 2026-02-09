@@ -20,7 +20,7 @@ class Workflow(Base, TimestampMixin):
     __tablename__ = "workflows"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    repo_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), nullable=False)
+    repo_id: Mapped[int] = mapped_column(ForeignKey("repositories.id"), nullable=False, index=True)
     github_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     path: Mapped[str] = mapped_column(String(500), nullable=False)

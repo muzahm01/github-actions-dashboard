@@ -1,6 +1,6 @@
 """Job endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,7 @@ router = APIRouter()
 async def get_job(
     job_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get job details."""
     repo = JobRepository(db)
     job = await repo.get_by_id(job_id)
@@ -44,7 +44,7 @@ async def get_job(
 async def get_job_logs(
     job_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get job logs."""
     job_repo = JobRepository(db)
     job = await job_repo.get_by_id(job_id)

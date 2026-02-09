@@ -8,6 +8,8 @@ from app.config import Settings
 from app.infrastructure.external.embedding_client import EmbeddingClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestEmbeddingClientInit:
     """Tests for EmbeddingClient initialization."""
 

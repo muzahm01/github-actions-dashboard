@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestSemanticSearch:
     """Tests for POST /api/v1/search/semantic endpoint."""
 

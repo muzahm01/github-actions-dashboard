@@ -1,6 +1,6 @@
 """Workflow run endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,7 @@ async def list_runs(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     conclusion: str | None = Query(default=None),
-) -> dict:
+) -> dict[str, Any]:
     """List all workflow runs with pagination and optional filtering."""
     repo = WorkflowRunRepository(db)
 
@@ -56,7 +56,7 @@ async def list_runs(
 async def get_recent_failures(
     db: Annotated[AsyncSession, Depends(get_db)],
     limit: int = Query(default=10, ge=1, le=50),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Get recent failed workflow runs."""
     repo = WorkflowRunRepository(db)
     runs = await repo.get_recent_failures(limit=limit)
@@ -85,7 +85,7 @@ async def get_recent_failures(
 async def get_run(
     run_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get workflow run details with jobs."""
     repo = WorkflowRunRepository(db)
     run = await repo.get_with_jobs(run_id)

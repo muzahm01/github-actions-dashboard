@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestAnalyzeError:
     """Tests for POST /api/v1/analysis/analyze endpoint."""
 

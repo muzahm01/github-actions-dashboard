@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Protocol
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class PromptTemplate:
             result = result.replace(placeholder, str(value))
         return result
 
-    def validate_variables(self, provided: dict) -> list[str]:
+    def validate_variables(self, provided: dict[str, Any]) -> list[str]:
         """Validate that all required variables are provided.
 
         Returns list of missing variables.
@@ -330,10 +330,7 @@ class PromptService:
         if variables is None:
             import re
 
-            variables = re.findall(r"\{(\w+)\}", template)
-            # Remove duplicates while preserving order
-            seen = set()
-            variables = [v for v in variables if not (v in seen or seen.add(v))]
+            variables = list(dict.fromkeys(re.findall(r"\{(\w+)\}", template)))
 
         prompt = PromptTemplate(
             id=len(self._custom_prompts) + 100,  # Start custom IDs at 100
@@ -423,7 +420,7 @@ class PromptService:
     async def render_prompt(
         self,
         prompt_type: PromptType,
-        variables: dict,
+        variables: dict[str, Any],
         prompt_id: int | None = None,
     ) -> str:
         """Render a prompt with provided variables."""

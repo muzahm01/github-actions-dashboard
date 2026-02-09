@@ -20,7 +20,7 @@ class Artifact(Base, TimestampMixin):
     __tablename__ = "artifacts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    run_id: Mapped[int] = mapped_column(ForeignKey("workflow_runs.id"), nullable=False)
+    run_id: Mapped[int] = mapped_column(ForeignKey("workflow_runs.id"), nullable=False, index=True)
     github_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     size_bytes: Mapped[int | None] = mapped_column(Integer)

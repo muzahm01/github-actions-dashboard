@@ -101,7 +101,7 @@ class GitHubClient:
             await self._client.aclose()
             self._client = None
 
-    async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+    async def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make API request with error handling."""
         client = await self._get_client()
         try:

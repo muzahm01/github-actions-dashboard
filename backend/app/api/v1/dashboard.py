@@ -1,7 +1,7 @@
 """Dashboard API endpoints."""
 
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -19,7 +19,7 @@ router = APIRouter()
 @router.get("/stats")
 async def get_dashboard_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get dashboard statistics including run counts and success rates."""
     now = datetime.now(UTC)
     last_24h = now - timedelta(hours=24)

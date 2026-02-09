@@ -1,5 +1,7 @@
 """Repository for jobs."""
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -45,7 +47,7 @@ class JobRepository(BaseRepository[Job]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def upsert_by_github_id(self, job_data: dict) -> Job:
+    async def upsert_by_github_id(self, job_data: dict[str, Any]) -> Job:
         """Insert or update job by GitHub ID."""
         github_id = job_data["github_id"]
         existing = await self.get_by_github_id(github_id)

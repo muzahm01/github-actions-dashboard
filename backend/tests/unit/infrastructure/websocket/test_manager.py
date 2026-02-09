@@ -7,6 +7,8 @@ import pytest
 from app.infrastructure.websocket.manager import ConnectionManager
 
 
+pytestmark = pytest.mark.unit
+
 @pytest.fixture
 def connection_manager():
     """Create a fresh connection manager for each test."""

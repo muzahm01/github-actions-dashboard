@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from app.config import get_settings
 from app.infrastructure.cache.redis_cache import RedisCache
@@ -21,12 +22,12 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task
-def clear_analysis_cache() -> dict:
+@celery_app.task(soft_time_limit=60, time_limit=90)
+def clear_analysis_cache() -> dict[str, Any]:
     """Clear expired entries from the analysis cache."""
     logger.info("Clearing analysis cache")
 
-    async def _clear_cache() -> dict:
+    async def _clear_cache() -> dict[str, Any]:
         cache = RedisCache(settings)
         try:
             # Redis handles TTL automatically, but we can force-clear specific patterns if needed
@@ -41,12 +42,12 @@ def clear_analysis_cache() -> dict:
     return run_async(_clear_cache())
 
 
-@celery_app.task
-def health_check() -> dict:
+@celery_app.task(soft_time_limit=60, time_limit=90)
+def health_check() -> dict[str, Any]:
     """Perform a health check on all system components."""
     logger.info("Running system health check")
 
-    async def _health_check() -> dict:
+    async def _health_check() -> dict[str, Any]:
         from app.infrastructure.database.session import get_session_factory
 
         results = {
@@ -87,8 +88,8 @@ def health_check() -> dict:
     return run_async(_health_check())
 
 
-@celery_app.task
-def cleanup_old_data() -> dict:
+@celery_app.task(soft_time_limit=300, time_limit=360)
+def cleanup_old_data() -> dict[str, Any]:
     """Clean up data older than the configured retention period.
 
     Deletes workflow runs (and cascading: jobs, logs, test results, error analyses)
@@ -99,10 +100,11 @@ def cleanup_old_data() -> dict:
         extra={"retention_days": settings.data_retention_days},
     )
 
-    async def _cleanup() -> dict:
+    async def _cleanup() -> dict[str, Any]:
         from sqlalchemy import delete, select
 
         from app.infrastructure.database.models.error_analysis import ErrorAnalysis
+        from app.infrastructure.database.models.job import Job
         from app.infrastructure.database.models.log import Log
         from app.infrastructure.database.models.workflow_run import WorkflowRun
         from app.infrastructure.database.session import get_session_factory
@@ -131,15 +133,26 @@ def cleanup_old_data() -> dict:
                         "cutoff_date": cutoff_date.isoformat(),
                     }
 
-                # Delete error analyses for old runs
+                # Build subquery: log IDs for old runs (Log → Job → WorkflowRun)
+                log_ids_subq = (
+                    select(Log.id)
+                    .join(Job, Log.job_id == Job.id)
+                    .where(Job.run_id.in_(run_ids))
+                    .scalar_subquery()
+                )
+
+                # Delete error analyses for old runs (via log_id)
                 delete_analyses = delete(ErrorAnalysis).where(
-                    ErrorAnalysis.workflow_run_id.in_(run_ids)
+                    ErrorAnalysis.log_id.in_(log_ids_subq)
                 )
                 analyses_result = await session.execute(delete_analyses)
                 deleted_counts["error_analyses"] = analyses_result.rowcount
 
-                # Delete logs for old runs
-                delete_logs = delete(Log).where(Log.workflow_run_id.in_(run_ids))
+                # Delete logs for old runs (via job_id → run_id)
+                job_ids_subq = (
+                    select(Job.id).where(Job.run_id.in_(run_ids)).scalar_subquery()
+                )
+                delete_logs = delete(Log).where(Log.job_id.in_(job_ids_subq))
                 logs_result = await session.execute(delete_logs)
                 deleted_counts["logs"] = logs_result.rowcount
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
@@ -64,7 +66,7 @@ class NotificationStatsResponse(BaseModel):
 
 
 # In-memory storage for configs (in production, use database)
-_notification_configs: dict[NotificationChannel, dict] = {}
+_notification_configs: dict[NotificationChannel, dict[str, Any]] = {}
 
 
 @router.get("/configs", response_model=list[NotificationConfigResponse])
@@ -128,6 +130,7 @@ async def test_notification(request: TestNotificationRequest) -> TestNotificatio
     # Import here to avoid circular imports
     from app.application.services.notification_service import (
         DiscordSender,
+        NotificationSender,
         SlackSender,
         WebhookSender,
     )
@@ -144,6 +147,7 @@ async def test_notification(request: TestNotificationRequest) -> TestNotificatio
 
     # Get appropriate sender
     webhook_url = config["webhook_url"]
+    sender: NotificationSender
     if request.channel == NotificationChannel.SLACK:
         sender = SlackSender(webhook_url)
     elif request.channel == NotificationChannel.DISCORD:
@@ -185,7 +189,7 @@ async def trigger_workflow_failed_notification(
     actor: str,
     run_url: str = "",
     failure_reason: str = "",
-) -> dict:
+) -> dict[str, Any]:
     """Manually trigger a workflow failed notification."""
     from app.application.services.notification_service import (
         NotificationConfig,

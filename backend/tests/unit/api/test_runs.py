@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestListRuns:
     """Tests for GET /api/v1/runs/ endpoint."""
 

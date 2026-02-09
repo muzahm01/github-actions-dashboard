@@ -1,6 +1,6 @@
 """Error analysis endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -33,7 +33,7 @@ class SimilarErrorRequest(BaseModel):
 async def analyze_error(
     request: AnalysisRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """
     Analyze error with LLM.
 
@@ -77,7 +77,7 @@ async def analyze_error(
 async def get_analysis(
     analysis_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get existing analysis by ID."""
     repo = ErrorAnalysisRepository(db)
     analysis = await repo.get_by_id(analysis_id)
@@ -106,7 +106,7 @@ async def get_analysis(
 async def find_similar_errors(
     request: SimilarErrorRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """
     Find similar errors using vector similarity search.
 

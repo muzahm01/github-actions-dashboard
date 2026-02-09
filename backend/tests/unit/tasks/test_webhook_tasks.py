@@ -2,10 +2,14 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.tasks.webhook_tasks import (
     ProcessedWebhookResult,
     process_webhook_event,
 )
+
+pytestmark = pytest.mark.unit
 
 
 class TestProcessWebhookEventTask:

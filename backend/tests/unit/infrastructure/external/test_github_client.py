@@ -14,6 +14,8 @@ from app.infrastructure.external.github_client import (
     GitHubWorkflowRun,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestGitHubClientInit:
     """Tests for GitHubClient initialization."""

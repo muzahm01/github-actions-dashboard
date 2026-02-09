@@ -41,7 +41,7 @@ SUPPORTED_EVENTS = {
 }
 
 
-@celery_app.task(bind=True, max_retries=3)
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=60, time_limit=90)
 def process_webhook_event(
     self,  # type: ignore[no-untyped-def]
     event_type: str,

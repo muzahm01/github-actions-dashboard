@@ -7,6 +7,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestRepositoriesRouter:
     """Tests for repositories router configuration."""
 

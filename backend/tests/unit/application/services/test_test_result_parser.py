@@ -24,6 +24,8 @@ from app.application.services.test_result_parser import (
     VitestParser,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestPytestParser:
     """Test suite for pytest log parser."""

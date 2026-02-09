@@ -1,6 +1,6 @@
 """Workflow endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,7 @@ async def list_workflows(
     db: Annotated[AsyncSession, Depends(get_db)],
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-) -> dict:
+) -> dict[str, Any]:
     """List all workflows with pagination."""
     repo = WorkflowRepository(db)
     workflows = await repo.get_all(limit=limit, offset=offset)
@@ -44,7 +44,7 @@ async def list_workflows(
 async def get_workflow(
     workflow_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get workflow details."""
     repo = WorkflowRepository(db)
     workflow = await repo.get_by_id(workflow_id)

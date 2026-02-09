@@ -1,7 +1,7 @@
 """Search endpoints."""
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
@@ -28,7 +28,7 @@ async def semantic_search(
     request: SearchRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
-) -> dict:
+) -> dict[str, Any]:
     """
     Semantic search using embeddings.
 
@@ -79,7 +79,7 @@ async def semantic_search(
 async def text_search(
     request: SearchRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """
     Full-text search in log content.
 
@@ -115,7 +115,7 @@ async def search_logs(
     category: str | None = Query(default=None, description="Filter by error category"),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-) -> dict:
+) -> dict[str, Any]:
     """
     Search logs with optional filters.
     """

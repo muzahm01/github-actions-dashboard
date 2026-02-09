@@ -376,17 +376,26 @@ Only 2 reusable components in `components/`. As views grow past 400 lines, extra
 
 ## 9. Prioritized Action Plan
 
-### Phase 1: Fix Now (Week 1) — Critical + High Risk
+### Phase 1: Fix Now (Week 1) — Critical + High Risk  ✅ COMPLETED (2026-02-09)
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 1 | Fix 5 critical mypy bugs (TS-01 through TS-05) | Type Safety | S | Prevents runtime crashes |
-| 2 | Add `@pytest.mark.unit` to all 288 unit test functions | Testing | M | Enables selective test execution |
-| 3 | Add `index=True` to 8 FK columns + 3 query columns; create Alembic migration | Performance | M | Prevents full table scans |
-| 4 | Add `soft_time_limit`/`time_limit` to all Celery tasks | Performance | S | Prevents hung workers |
-| 5 | Fix `cleanup_old_data()` — use batch deletes + cascade | Performance | S | Prevents memory exhaustion |
-| 6 | Fix 109 bare `dict` → `dict[str, Any]` type annotations | Type Safety | M | Moves toward mypy passing |
-| 7 | Remove unused deps: `python-socketio`, `async-timeout`, `websockets` | Dependencies | S | Reduces attack surface |
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 1 | Fix 5 critical mypy bugs (TS-01 through TS-05) | Type Safety | S | Prevents runtime crashes | ✅ Done |
+| 2 | Add `@pytest.mark.unit` to all 286 unit test functions | Testing | M | Enables selective test execution | ✅ Done |
+| 3 | Add `index=True` to 8 FK columns + 3 query columns; create Alembic migration | Performance | M | Prevents full table scans | ✅ Done |
+| 4 | Add `soft_time_limit`/`time_limit` to all 17 Celery tasks | Performance | S | Prevents hung workers | ✅ Done |
+| 5 | Fix `cleanup_old_data()` — use batch deletes via subqueries | Performance | S | Prevents memory exhaustion | ✅ Done |
+| 6 | Fix bare `dict` → `dict[str, Any]` type annotations across 36 files | Type Safety | M | Moves toward mypy passing | ✅ Done |
+| 7 | Remove unused deps: `python-socketio`, `async-timeout`, `websockets` | Dependencies | S | Reduces attack surface | ✅ Done |
+
+**Phase 1 completion notes:**
+- **TS-01** (`github_client.py`): Changed `_request` return type from `dict[str, Any]` to `Any` since GitHub API returns both dicts and lists.
+- **TS-02** (`prompt_service.py`): Replaced `set.add()` idiom with `dict.fromkeys()` for duplicate-free list.
+- **TS-03** (`maintenance_tasks.py`): Fixed non-existent `ErrorAnalysis.workflow_run_id` and `Log.workflow_run_id` — rewrote to use subqueries through `Log → Job → WorkflowRun` chain.
+- **TS-04** (`github_sync_service.py`): Changed `errors: list[str] = None` to `field(default_factory=list)`.
+- **TS-05** (`notifications.py`): Added explicit `sender: NotificationSender` type annotation before the if/elif/else chain.
+- **Alembic migration** `a1b2c3d4e5f6` created for all new indexes.
+- **All 286 unit tests pass**, `pytest -m unit` collects all 286, ruff passes, frontend builds cleanly.
 
 ### Phase 2: Next Sprint (Weeks 2-3) — High Priority
 

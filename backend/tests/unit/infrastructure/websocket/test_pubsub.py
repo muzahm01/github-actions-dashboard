@@ -12,6 +12,8 @@ from app.infrastructure.websocket.pubsub import (
     publish_workflow_run_update,
 )
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def pubsub_manager():

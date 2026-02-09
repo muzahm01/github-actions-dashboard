@@ -1,6 +1,6 @@
 """Repository API endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,7 @@ async def list_repositories(
     active_only: bool = Query(default=False, description="Filter to only active repositories"),
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """List all repositories."""
     repo = RepositoryRepository(db)
 
@@ -47,7 +47,7 @@ async def list_repositories(
 async def get_repository(
     repository_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get repository details."""
     repo = RepositoryRepository(db)
     repository = await repo.get_by_id(repository_id)
@@ -78,7 +78,7 @@ async def get_repository(
 async def activate_repository(
     repository_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Activate a repository for monitoring."""
     repo = RepositoryRepository(db)
     repository = await repo.get_by_id(repository_id)
@@ -99,7 +99,7 @@ async def activate_repository(
 async def deactivate_repository(
     repository_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Deactivate a repository from monitoring."""
     repo = RepositoryRepository(db)
     repository = await repo.get_by_id(repository_id)

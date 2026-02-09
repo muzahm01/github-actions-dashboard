@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -20,7 +20,7 @@ class TestResult(Base, TimestampMixin):
     __tablename__ = "test_results"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    log_id: Mapped[int] = mapped_column(ForeignKey("logs.id"), nullable=False)
+    log_id: Mapped[int] = mapped_column(ForeignKey("logs.id"), nullable=False, index=True)
     framework: Mapped[str] = mapped_column(String(50), nullable=False)
     total_tests: Mapped[int] = mapped_column(Integer, nullable=False)
     passed: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -28,7 +28,7 @@ class TestResult(Base, TimestampMixin):
     skipped: Mapped[int] = mapped_column(Integer, default=0)
     duration_seconds: Mapped[float | None] = mapped_column(Float)
     raw_output: Mapped[str | None] = mapped_column(Text)
-    parsed_failures: Mapped[dict | None] = mapped_column(JSONB)
+    parsed_failures: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
     # Relationships
     log: Mapped[Log] = relationship(back_populates="test_results")

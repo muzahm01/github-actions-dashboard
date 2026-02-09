@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 
@@ -23,7 +23,7 @@ class DomainEvent(ABC):
         """Return event type identifier."""
         ...
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary for serialization."""
         return {
             "event_id": str(self.event_id),
@@ -34,7 +34,7 @@ class DomainEvent(ABC):
         }
 
     @abstractmethod
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event-specific payload as dictionary."""
         ...
 

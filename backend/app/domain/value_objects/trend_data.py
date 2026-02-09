@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 
 class TrendDirection(str, Enum):
@@ -41,7 +41,7 @@ class TrendPoint:
     timestamp: datetime
     value: float
     count: int = 0  # Number of samples for this point
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def zero(cls, timestamp: datetime) -> TrendPoint:
@@ -142,6 +142,6 @@ class TrendSummary:
     avg_duration_seconds: float
     success_rate_trend: TrendDirection
     failure_trend: TrendDirection
-    top_failing_workflows: tuple[dict, ...] = field(default_factory=tuple)
+    top_failing_workflows: tuple[dict[str, Any], ...] = field(default_factory=tuple)
     comparison_period: str = ""  # e.g., "vs last week"
     success_rate_change: float = 0.0

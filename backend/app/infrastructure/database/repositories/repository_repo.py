@@ -1,5 +1,7 @@
 """Repository for GitHub repositories."""
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,7 +40,7 @@ class RepositoryRepository(BaseRepository[Repository]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def upsert_by_github_id(self, repo_data: dict) -> Repository:
+    async def upsert_by_github_id(self, repo_data: dict[str, Any]) -> Repository:
         """Insert or update repository by GitHub ID."""
         github_id = repo_data["github_id"]
         existing = await self.get_by_github_id(github_id)

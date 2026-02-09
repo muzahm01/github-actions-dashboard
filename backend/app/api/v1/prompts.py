@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -101,8 +102,8 @@ async def list_prompts(
     return [_to_response(p) for p in prompts]
 
 
-@router.get("/types", response_model=list[dict])
-async def list_prompt_types() -> list[dict]:
+@router.get("/types", response_model=list[dict[str, Any]])
+async def list_prompt_types() -> list[dict[str, Any]]:
     """List all available prompt types."""
     return [
         {

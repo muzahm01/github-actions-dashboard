@@ -7,6 +7,8 @@ import pytest
 from app.infrastructure.database.repositories.test_result_repo import TestResultRepository
 
 
+pytestmark = pytest.mark.unit
+
 class TestTestResultRepository:
     """Tests for TestResultRepository."""
 

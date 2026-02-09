@@ -24,15 +24,15 @@ class Log(Base, TimestampMixin):
     __tablename__ = "logs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False)
-    step_id: Mapped[int | None] = mapped_column(ForeignKey("job_steps.id"))
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), nullable=False, index=True)
+    step_id: Mapped[int | None] = mapped_column(ForeignKey("job_steps.id"), index=True)
     log_content: Mapped[str | None] = mapped_column(Text)
     log_size_bytes: Mapped[int | None] = mapped_column(Integer)
     error_content: Mapped[str | None] = mapped_column(Text)
     error_lines: Mapped[list[int] | None] = mapped_column(ARRAY(Integer))
     log_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
-    category: Mapped[str | None] = mapped_column(String(100))
+    category: Mapped[str | None] = mapped_column(String(100), index=True)
 
     # Relationships
     job: Mapped[Job] = relationship(back_populates="logs")
