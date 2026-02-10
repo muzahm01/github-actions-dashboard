@@ -35,7 +35,7 @@ dev = [
     "freezegun==1.4.0",
     "hypothesis==6.151.2",
     "mypy==1.14.1",
-    "pre-commit==4.0.1",
+    "pre-commit==4.5.1",
     "pytest==8.3.4",
     "pytest-asyncio==0.25.0",
     "pytest-cov==6.0.0",
