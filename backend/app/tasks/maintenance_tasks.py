@@ -2,8 +2,9 @@
 
 import asyncio
 import logging
+from collections.abc import Coroutine
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, TypeVar
 
 from app.config import get_settings
 from app.infrastructure.cache.redis_cache import RedisCache
@@ -13,7 +14,10 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def run_async(coro):  # type: ignore[no-untyped-def]
+_T = TypeVar("_T")
+
+
+def run_async(coro: Coroutine[Any, Any, _T]) -> _T:
     """Helper to run async code in sync Celery tasks."""
     loop = asyncio.new_event_loop()
     try:
@@ -22,7 +26,7 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(soft_time_limit=60, time_limit=90)
+@celery_app.task(soft_time_limit=60, time_limit=90)  # type: ignore[misc]
 def clear_analysis_cache() -> dict[str, Any]:
     """Clear expired entries from the analysis cache."""
     logger.info("Clearing analysis cache")
@@ -42,7 +46,7 @@ def clear_analysis_cache() -> dict[str, Any]:
     return run_async(_clear_cache())
 
 
-@celery_app.task(soft_time_limit=60, time_limit=90)
+@celery_app.task(soft_time_limit=60, time_limit=90)  # type: ignore[misc]
 def health_check() -> dict[str, Any]:
     """Perform a health check on all system components."""
     logger.info("Running system health check")
@@ -88,7 +92,7 @@ def health_check() -> dict[str, Any]:
     return run_async(_health_check())
 
 
-@celery_app.task(soft_time_limit=300, time_limit=360)
+@celery_app.task(soft_time_limit=300, time_limit=360)  # type: ignore[misc]
 def cleanup_old_data() -> dict[str, Any]:
     """Clean up data older than the configured retention period.
 
@@ -149,9 +153,7 @@ def cleanup_old_data() -> dict[str, Any]:
                 deleted_counts["error_analyses"] = analyses_result.rowcount
 
                 # Delete logs for old runs (via job_id → run_id)
-                job_ids_subq = (
-                    select(Job.id).where(Job.run_id.in_(run_ids)).scalar_subquery()
-                )
+                job_ids_subq = select(Job.id).where(Job.run_id.in_(run_ids)).scalar_subquery()
                 delete_logs = delete(Log).where(Log.job_id.in_(job_ids_subq))
                 logs_result = await session.execute(delete_logs)
                 deleted_counts["logs"] = logs_result.rowcount

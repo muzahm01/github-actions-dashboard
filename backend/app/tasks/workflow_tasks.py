@@ -4,8 +4,11 @@ import asyncio
 import hashlib
 import logging
 import re
+from collections.abc import Coroutine
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, TypeVar
+
+from celery import Task
 
 from app.application.services.test_result_parser import TestResultParserService
 from app.config import get_settings
@@ -32,7 +35,10 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def run_async(coro):  # type: ignore[no-untyped-def]
+_T = TypeVar("_T")
+
+
+def run_async(coro: Coroutine[Any, Any, _T]) -> _T:
     """Helper to run async code in sync Celery tasks."""
     loop = asyncio.new_event_loop()
     try:
@@ -41,8 +47,8 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")
-def sync_repository(self, owner: str, repo: str) -> dict[str, Any]:  # type: ignore[no-untyped-def]
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")  # type: ignore[misc]
+def sync_repository(self: Task, owner: str, repo: str) -> dict[str, Any]:
     """Sync a single repository's workflows and runs."""
     logger.info(f"Syncing repository: {owner}/{repo}")
 
@@ -119,8 +125,8 @@ def _extract_error_content(log_content: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")
-def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict[str, Any]:  # type: ignore[no-untyped-def]
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")  # type: ignore[misc]
+def process_workflow_run(self: Task, owner: str, repo: str, run_id: int) -> dict[str, Any]:
     """Process a workflow run - fetch jobs and logs, parse test results, save to database."""
     logger.info(f"Processing workflow run: {owner}/{repo}#{run_id}")
 
@@ -275,7 +281,7 @@ def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict[str, 
         raise self.retry(exc=e, countdown=60) from e
 
 
-@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="5/m")
+@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="5/m")  # type: ignore[misc]
 def sync_all_workflows() -> dict[str, Any]:
     """Sync all configured repositories (scheduled task)."""
     logger.info("Starting scheduled workflow sync")
@@ -307,7 +313,7 @@ def sync_all_workflows() -> dict[str, Any]:
     return run_async(_sync_all())
 
 
-@celery_app.task(soft_time_limit=300, time_limit=360)
+@celery_app.task(soft_time_limit=300, time_limit=360)  # type: ignore[misc]
 def cleanup_old_data() -> dict[str, Any]:
     """Clean up old workflow data based on retention policy."""
     logger.info(f"Cleaning up data older than {settings.data_retention_days} days")

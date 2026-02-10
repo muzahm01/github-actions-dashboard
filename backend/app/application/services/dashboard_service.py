@@ -1,26 +1,50 @@
 """Dashboard statistics service."""
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.infrastructure.cache.redis_cache import RedisCache
 from app.infrastructure.database.models.error_analysis import ErrorAnalysis
 from app.infrastructure.database.models.repository import Repository
 from app.infrastructure.database.models.workflow import Workflow
 from app.infrastructure.database.models.workflow_run import WorkflowRun
 
+logger = logging.getLogger(__name__)
+
+DASHBOARD_CACHE_KEY = "dashboard:stats"
+DASHBOARD_CACHE_TTL = 300  # 5 minutes
+
 
 class DashboardService:
     """Service for computing dashboard statistics."""
 
-    def __init__(self, session: AsyncSession) -> None:
-        """Initialize with database session."""
+    def __init__(
+        self, session: AsyncSession, cache: RedisCache | None = None
+    ) -> None:
+        """Initialize with database session and optional cache."""
         self._session = session
+        self._cache = cache
 
     async def get_stats(self) -> dict[str, Any]:
-        """Compute and return dashboard statistics."""
+        """Compute and return dashboard statistics, with optional caching."""
+        if self._cache:
+            cached = await self._cache.get(DASHBOARD_CACHE_KEY)
+            if cached:
+                return cached
+
+        stats = await self._compute_stats()
+
+        if self._cache:
+            await self._cache.set(DASHBOARD_CACHE_KEY, stats, ttl=DASHBOARD_CACHE_TTL)
+
+        return stats
+
+    async def _compute_stats(self) -> dict[str, Any]:
+        """Compute dashboard statistics from the database."""
         now = datetime.now(UTC)
         last_24h = now - timedelta(hours=24)
         last_7d = now - timedelta(days=7)

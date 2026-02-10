@@ -2,8 +2,11 @@
 
 import asyncio
 import logging
+from collections.abc import Coroutine
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeVar
+
+from celery import Task
 
 from app.config import get_settings
 from app.tasks.celery_app import celery_app
@@ -13,7 +16,10 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def run_async(coro):  # type: ignore[no-untyped-def]
+_T = TypeVar("_T")
+
+
+def run_async(coro: Coroutine[Any, Any, _T]) -> _T:
     """Helper to run async code in sync Celery tasks."""
     loop = asyncio.new_event_loop()
     try:
@@ -41,9 +47,9 @@ SUPPORTED_EVENTS = {
 }
 
 
-@celery_app.task(bind=True, max_retries=3, soft_time_limit=60, time_limit=90)
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=60, time_limit=90)  # type: ignore[misc]
 def process_webhook_event(
-    self,  # type: ignore[no-untyped-def]
+    self: Task,
     event_type: str,
     delivery_id: str,
     payload: dict[str, Any],
@@ -177,7 +183,7 @@ async def _handle_workflow_job(
             "reason": "Only completed jobs are processed",
         }
 
-    triggered_tasks = []
+    triggered_tasks: list[str] = []
 
     # For failed jobs, we could trigger log fetching directly
     # But typically we process at the run level for completeness

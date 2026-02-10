@@ -2,8 +2,11 @@
 
 import asyncio
 import logging
+from collections.abc import Coroutine
 from datetime import datetime
-from typing import Any
+from typing import Any, TypeVar, cast
+
+from celery import Task
 
 from app.config import get_settings
 from app.infrastructure.database.models.error_analysis import ErrorAnalysis
@@ -24,7 +27,10 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def run_async(coro):  # type: ignore[no-untyped-def]
+_T = TypeVar("_T")
+
+
+def run_async(coro: Coroutine[Any, Any, _T]) -> _T:
     """Helper to run async code in sync Celery tasks."""
     loop = asyncio.new_event_loop()
     try:
@@ -33,9 +39,9 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="10/m")
-def analyze_error_log(  # type: ignore[no-untyped-def]
-    self,
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="10/m")  # type: ignore[misc]
+def analyze_error_log(
+    self: Task,
     log_id: int,
     log_content: str | None = None,
     framework: str = "unknown",
@@ -133,7 +139,7 @@ def analyze_error_log(  # type: ignore[no-untyped-def]
                 if "analysis_id" in result_dict:
                     publish_analysis_complete(
                         log_id=log_id,
-                        analysis_id=result_dict["analysis_id"],
+                        analysis_id=cast(int, result_dict["analysis_id"]),
                         data={
                             "error_summary": result.error_summary,
                             "confidence_score": result.confidence_score,
@@ -149,9 +155,9 @@ def analyze_error_log(  # type: ignore[no-untyped-def]
         raise self.retry(exc=e, countdown=120) from e
 
 
-@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="20/m")
-def generate_embedding(  # type: ignore[no-untyped-def]
-    self,
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="20/m")  # type: ignore[misc]
+def generate_embedding(
+    self: Task,
     log_id: int,
     content: str | None = None,
 ) -> dict[str, Any]:
@@ -224,8 +230,10 @@ def generate_embedding(  # type: ignore[no-untyped-def]
         raise self.retry(exc=e, countdown=60) from e
 
 
-@celery_app.task(soft_time_limit=300, time_limit=360, rate_limit="5/m")
-def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = None) -> dict[str, Any]:
+@celery_app.task(soft_time_limit=300, time_limit=360, rate_limit="5/m")  # type: ignore[misc]
+def batch_generate_embeddings(
+    log_ids: list[int], contents: list[str] | None = None
+) -> dict[str, Any]:
     """
     Generate embeddings for multiple logs in batch and save to database.
 
@@ -295,7 +303,7 @@ def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = N
         return {"error": str(e), "logs_processed": 0}
 
 
-@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="2/m")
+@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="2/m")  # type: ignore[misc]
 def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict[str, Any]:
     """
     Generate embeddings for logs that don't have them.
@@ -348,7 +356,7 @@ def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict[str, 
         return {"error": str(e), "status": "failed"}
 
 
-@celery_app.task(soft_time_limit=120, time_limit=180, rate_limit="10/m")
+@celery_app.task(soft_time_limit=120, time_limit=180, rate_limit="10/m")  # type: ignore[misc]
 def summarize_run_failures(run_id: int, failures: list[dict[str, Any]]) -> dict[str, Any]:
     """Summarize all failures in a workflow run."""
     logger.info(f"Summarizing failures for run {run_id}")
