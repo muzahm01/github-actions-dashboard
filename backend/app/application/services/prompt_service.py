@@ -379,6 +379,35 @@ class PromptService:
             return None
 
         # Apply updates
+        self._apply_field_updates(
+            prompt,
+            name=name,
+            template=template,
+            description=description,
+            variables=variables,
+            is_active=is_active,
+        )
+
+        # Save
+        if self._store:
+            prompt = await self._store.save(prompt)
+        else:
+            self._custom_prompts[prompt_id] = prompt
+
+        logger.info(f"Updated prompt: {prompt.name} ({prompt.id})")
+        return prompt
+
+    @staticmethod
+    def _apply_field_updates(
+        prompt: PromptTemplate,
+        *,
+        name: str | None,
+        template: str | None,
+        description: str | None,
+        variables: list[str] | None,
+        is_active: bool | None,
+    ) -> None:
+        """Apply non-None field updates to a prompt."""
         if name is not None:
             prompt.name = name
         if template is not None:
@@ -389,17 +418,7 @@ class PromptService:
             prompt.variables = variables
         if is_active is not None:
             prompt.is_active = is_active
-
         prompt.updated_at = datetime.utcnow()
-
-        # Save
-        if self._store:
-            prompt = await self._store.save(prompt)
-        else:
-            self._custom_prompts[prompt_id] = prompt
-
-        logger.info(f"Updated prompt: {prompt.name} ({prompt.id})")
-        return prompt
 
     async def delete_prompt(self, prompt_id: int) -> bool:
         """Delete a custom prompt."""

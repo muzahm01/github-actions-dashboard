@@ -125,6 +125,117 @@ def _extract_error_content(log_content: str) -> tuple[str | None, str | None]:
     return None, None
 
 
+async def _save_job_log(
+    job: Any,
+    owner: str,
+    repo: str,
+    client: GitHubClient,
+    log_repo: LogRepository,
+    job_repo: JobRepository,
+    test_result_repo: TestResultRepository,
+    parser_service: TestResultParserService,
+) -> tuple[int, int]:
+    """Process a single failed job: save log, parse test results.
+
+    Returns (logs_saved, test_results_saved) counts.
+    """
+    log_content = await client.download_job_logs(owner, repo, job.id)
+    if not log_content:
+        return 0, 0
+
+    log_hash = hashlib.sha256(log_content.encode()).hexdigest()
+    existing_log = await log_repo.get_by_hash(log_hash)
+    if existing_log:
+        return 0, 0
+
+    db_job = await job_repo.get_by_github_id(job.id)
+    if not db_job:
+        return 0, 0
+
+    error_content, category = _extract_error_content(log_content)
+    new_log = Log(
+        job_id=db_job.id,
+        log_content=log_content,
+        log_size_bytes=len(log_content.encode()),
+        log_hash=log_hash,
+        error_content=error_content,
+        category=category,
+    )
+    created_log = await log_repo.create(new_log)
+    logger.info(
+        f"Saved log for job {job.id}, "
+        f"size: {len(log_content)} bytes, "
+        f"category: {category}"
+    )
+
+    test_results_saved = await _parse_and_save_test_result(
+        job, created_log, db_job, log_content, parser_service, test_result_repo
+    )
+    return 1, test_results_saved
+
+
+async def _parse_and_save_test_result(
+    job: Any,
+    created_log: Log,
+    db_job: Any,
+    log_content: str,
+    parser_service: TestResultParserService,
+    test_result_repo: TestResultRepository,
+) -> int:
+    """Parse test results from log content and save to database. Returns count saved."""
+    test_result = parser_service.parse(log_content)
+    if not test_result:
+        return 0
+
+    parsed_failures = (
+        [
+            {
+                "test_name": f.test_name,
+                "error_message": f.error_message,
+                "stack_trace": f.stack_trace,
+                "file_path": f.file_path,
+                "line_number": f.line_number,
+            }
+            for f in test_result.failures
+        ]
+        if test_result.failures
+        else None
+    )
+
+    test_result_model = TestResultModel(
+        log_id=created_log.id,
+        framework=test_result.framework,
+        total_tests=test_result.total,
+        passed=test_result.passed,
+        failed=test_result.failed,
+        skipped=test_result.skipped,
+        duration_seconds=test_result.duration_seconds,
+        parsed_failures=parsed_failures,
+    )
+    await test_result_repo.create(test_result_model)
+    logger.info(
+        f"Parsed test results for job {job.id}: "
+        f"framework={test_result.framework}, "
+        f"total={test_result.total}, "
+        f"passed={test_result.passed}, "
+        f"failed={test_result.failed}"
+    )
+
+    publish_test_results_parsed(
+        log_id=created_log.id,
+        framework=test_result.framework,
+        total=test_result.total,
+        passed=test_result.passed,
+        failed=test_result.failed,
+        data={
+            "job_id": db_job.id,
+            "skipped": test_result.skipped,
+            "duration_seconds": test_result.duration_seconds,
+        },
+    )
+    return 1
+
+
 @celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")  # type: ignore[misc]
 def process_workflow_run(self: Task, owner: str, repo: str, run_id: int) -> dict[str, Any]:
     """Process a workflow run - fetch jobs and logs, parse test results, save to database."""
@@ -136,108 +247,25 @@ def process_workflow_run(self: Task, owner: str, repo: str, run_id: int) -> dict
 
         async with session_factory() as session:
             try:
-                # Get run details from GitHub
                 run = await client.get_workflow_run(owner, repo, run_id)
-
-                # Get jobs from GitHub
                 jobs = await client.list_jobs_for_run(owner, repo, run_id)
 
-                # Download logs for failed jobs and save to database
                 failed_jobs = [j for j in jobs if j.conclusion == "failure"]
                 logs_saved = 0
                 test_results_saved = 0
                 log_repo = LogRepository(session)
                 job_repo = JobRepository(session)
                 test_result_repo = TestResultRepository(session)
-
-                # Initialize test result parser service
                 parser_service = TestResultParserService()
 
                 for job in failed_jobs:
                     try:
-                        # Download log content
-                        log_content = await client.download_job_logs(owner, repo, job.id)
-                        if log_content:
-                            # Generate hash for deduplication
-                            log_hash = hashlib.sha256(log_content.encode()).hexdigest()
-
-                            # Check if log already exists
-                            existing_log = await log_repo.get_by_hash(log_hash)
-                            if not existing_log:
-                                # Find the job in our database
-                                db_job = await job_repo.get_by_github_id(job.id)
-                                if db_job:
-                                    # Extract error content and category
-                                    error_content, category = _extract_error_content(log_content)
-
-                                    # Create log entry with error content
-                                    new_log = Log(
-                                        job_id=db_job.id,
-                                        log_content=log_content,
-                                        log_size_bytes=len(log_content.encode()),
-                                        log_hash=log_hash,
-                                        error_content=error_content,
-                                        category=category,
-                                    )
-                                    created_log = await log_repo.create(new_log)
-                                    logs_saved += 1
-                                    logger.info(
-                                        f"Saved log for job {job.id}, "
-                                        f"size: {len(log_content)} bytes, "
-                                        f"category: {category}"
-                                    )
-
-                                    # Parse test results from log
-                                    test_result = parser_service.parse(log_content)
-                                    if test_result:
-                                        # Convert failures to JSON-serializable format
-                                        parsed_failures = None
-                                        if test_result.failures:
-                                            parsed_failures = [
-                                                {
-                                                    "test_name": f.test_name,
-                                                    "error_message": f.error_message,
-                                                    "stack_trace": f.stack_trace,
-                                                    "file_path": f.file_path,
-                                                    "line_number": f.line_number,
-                                                }
-                                                for f in test_result.failures
-                                            ]
-
-                                        # Save test result to database
-                                        test_result_model = TestResultModel(
-                                            log_id=created_log.id,
-                                            framework=test_result.framework,
-                                            total_tests=test_result.total,
-                                            passed=test_result.passed,
-                                            failed=test_result.failed,
-                                            skipped=test_result.skipped,
-                                            duration_seconds=test_result.duration_seconds,
-                                            parsed_failures=parsed_failures,
-                                        )
-                                        await test_result_repo.create(test_result_model)
-                                        test_results_saved += 1
-                                        logger.info(
-                                            f"Parsed test results for job {job.id}: "
-                                            f"framework={test_result.framework}, "
-                                            f"total={test_result.total}, "
-                                            f"passed={test_result.passed}, "
-                                            f"failed={test_result.failed}"
-                                        )
-
-                                        # Publish WebSocket event for test results
-                                        publish_test_results_parsed(
-                                            log_id=created_log.id,
-                                            framework=test_result.framework,
-                                            total=test_result.total,
-                                            passed=test_result.passed,
-                                            failed=test_result.failed,
-                                            data={
-                                                "job_id": db_job.id,
-                                                "skipped": test_result.skipped,
-                                                "duration_seconds": test_result.duration_seconds,
-                                            },
-                                        )
+                        saved, tests = await _save_job_log(
+                            job, owner, repo, client,
+                            log_repo, job_repo, test_result_repo, parser_service,
+                        )
+                        logs_saved += saved
+                        test_results_saved += tests
                     except Exception as e:
                         logger.warning(f"Failed to fetch/save logs for job {job.id}: {e}")
 
@@ -253,7 +281,6 @@ def process_workflow_run(self: Task, owner: str, repo: str, run_id: int) -> dict
                     "test_results_saved": test_results_saved,
                 }
 
-                # Publish WebSocket event for workflow run update
                 publish_workflow_run_update(
                     run_id=run_id,
                     status=run.status,
