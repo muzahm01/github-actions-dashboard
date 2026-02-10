@@ -451,23 +451,38 @@ Only 2 reusable components in `components/`. As views grow past 400 lines, extra
 - **Task 27** (.env.example): Added `REDIS_URL` with inline comments explaining format and purpose.
 - **All 439 unit tests pass** (117 new tests added in Phase 3), ruff is clean.
 
-### Phase 4: Backlog — Low Priority
+### Phase 4: Backlog — Low Priority  ✅ MOSTLY COMPLETED (2026-02-10)
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 28 | Write e2e tests (currently 0) | Testing | L | End-to-end confidence |
-| 29 | Write property-based tests with Hypothesis | Testing | M | Edge case discovery |
-| 30 | Remove `HelloWorld.vue` scaffold remnant | Frontend | S | Cleanup |
-| 31 | Move `autoprefixer`/`postcss` to devDependencies | Dependencies | S | Correctness |
-| 32 | Replace `console.error` with structured error logging in frontend | Frontend | S | Consistency |
-| 33 | Add `# nosec B311` to `trends.py` random usage | Dependencies | S | Suppress false positives |
-| 34 | Split `types/index.ts` into domain-specific type files | Frontend | S | Scalability |
-| 35 | Use shared Redis connection pool for pub/sub publish helpers | Performance | S | Minor optimization |
-| 36 | Add streaming for large log file downloads | Performance | M | Memory efficiency |
-| 37 | Verify if `psycopg2-binary` is needed for Alembic | Dependencies | S | Dependency cleanup |
-| 38 | Fix 3 PytestCollectionWarnings from `Test*` class names | Testing | S | Clean test output |
-| 39 | Upgrade `pytest` 8→9, `pytest-asyncio` 0.x→1.x | Dependencies | M | Stay current |
-| 40 | Upgrade `fastapi`, `pydantic`, `sentry-sdk`, `ruff`, `mypy` | Dependencies | M | Stay current |
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 28 | Write e2e tests (currently 0) | Testing | L | End-to-end confidence | ✅ Done |
+| 29 | Write property-based tests with Hypothesis | Testing | M | Edge case discovery | ✅ Done |
+| 30 | Remove `HelloWorld.vue` scaffold remnant | Frontend | S | Cleanup | ✅ Done |
+| 31 | Move `autoprefixer`/`postcss` to devDependencies | Dependencies | S | Correctness | ✅ Done |
+| 32 | Replace `console.error` with structured error logging in frontend | Frontend | S | Consistency | ✅ Done |
+| 33 | Add `# nosec B311` to `trends.py` random usage | Dependencies | S | Suppress false positives | ✅ Done |
+| 34 | Split `types/index.ts` into domain-specific type files | Frontend | S | Scalability | ✅ Done |
+| 35 | Use shared Redis connection pool for pub/sub publish helpers | Performance | S | Minor optimization | ✅ Done |
+| 36 | Add streaming for large log file downloads | Performance | M | Memory efficiency | ✅ Done |
+| 37 | Verify if `psycopg2-binary` is needed for Alembic | Dependencies | S | Dependency cleanup | ✅ Verified (needed) |
+| 38 | Fix 3 PytestCollectionWarnings from `Test*` class names | Testing | S | Clean test output | ✅ Done |
+| 39 | Upgrade `pytest` 8→9, `pytest-asyncio` 0.x→1.x | Dependencies | M | Stay current | Deferred |
+| 40 | Upgrade `fastapi`, `pydantic`, `sentry-sdk`, `ruff`, `mypy` | Dependencies | M | Stay current | Deferred |
+
+**Phase 4 completion notes:**
+- **Task 28** (e2e tests): Added 12 end-to-end tests covering health endpoints (root, ready, live), metrics, 404 handling, dashboard stats, repositories list, workflows list, runs list, and 3 trends endpoints.
+- **Task 29** (Property tests): Added 10 Hypothesis property-based tests covering Pagination (always-valid, monotonic offset, next/prev roundtrip), PaginatedResult (property consistency), TimeRange (non-negative duration, boundary containment, split contiguity, self-overlap), SearchQuery (clamping), SearchResult (is_relevant correctness).
+- **Task 30** (HelloWorld.vue): Removed unused scaffold component.
+- **Task 31** (devDependencies): Moved `autoprefixer` and `postcss` from `dependencies` to `devDependencies`.
+- **Task 32** (console.error): Replaced 3 `console.error` calls in `dashboard.ts` with `error.value` state updates for UI display.
+- **Task 33** (nosec): Added `# nosec B311 - used for demo/mock data only` to all 4 `import random` lines in `trends.py`.
+- **Task 34** (TypeScript types): Split `types/index.ts` (162 lines) into 6 domain-specific modules: `repository.ts`, `workflow.ts`, `job.ts`, `analysis.ts`, `dashboard.ts`, `search.ts`. Original `index.ts` is now a barrel re-export for backward compatibility.
+- **Task 35** (Redis pool): Replaced 5 per-call `redis.from_url()`/`r.close()` patterns with a shared `ConnectionPool` via `_get_sync_redis()` helper and centralized `_publish()` function.
+- **Task 36** (Log streaming): Rewrote `download_job_logs()` to use `client.stream()` with `aiter_bytes()` chunked reading, with configurable `max_size_bytes` (default 10MB) truncation.
+- **Task 37** (psycopg2-binary): Confirmed needed — Alembic's `env.py` uses `database_url_sync` which returns `postgresql://...`, requiring `psycopg2` as the default sync driver.
+- **Task 38** (PytestCollectionWarnings): Added `__test__ = False` to `TestResult`, `TestResultParserService`, and `TestResultRepository` classes. All 3 warnings eliminated.
+- **Tasks 39-40** (Dependency upgrades): Deferred — pytest 9 and pytest-asyncio 1.x involve breaking changes to configuration and async test patterns. fastapi/pydantic/ruff/mypy upgrades should be done in a dedicated migration sprint with full regression testing.
+- **All 461 unit tests pass** (22 new: 12 e2e + 10 property). Frontend builds cleanly.
 
 ---
 

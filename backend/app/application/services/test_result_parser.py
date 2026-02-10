@@ -56,6 +56,8 @@ __all__ = [
 class TestResultParserService:
     """Service that orchestrates multiple test result parsers."""
 
+    __test__ = False  # Prevent pytest collection
+
     def __init__(self, parsers: list[TestResultParser] | None = None) -> None:
         """Initialize with parsers, using defaults if none provided."""
         self._parsers = parsers or self._get_default_parsers()

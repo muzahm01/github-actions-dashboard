@@ -97,7 +97,9 @@ def test_publish_workflow_run_update():
     """Test publishing workflow run update."""
     mock_redis = MagicMock()
 
-    with patch("redis.from_url", return_value=mock_redis):
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         publish_workflow_run_update(
             run_id=123, status="completed", conclusion="success", data={"duration": 60}
         )
@@ -117,13 +119,15 @@ def test_publish_workflow_run_update():
         assert message["conclusion"] == "success"
         assert message["data"] == {"duration": 60}
 
-        # Verify close was called
-        mock_redis.close.assert_called_once()
-
 
 def test_publish_workflow_run_update_handles_error():
     """Test that publish handles errors gracefully."""
-    with patch("redis.from_url", side_effect=Exception("Redis error")):
+    mock_redis = MagicMock()
+    mock_redis.publish.side_effect = Exception("Redis error")
+
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         # Should not raise
         publish_workflow_run_update(run_id=123, status="completed")
 
@@ -132,7 +136,9 @@ def test_publish_job_update():
     """Test publishing job update."""
     mock_redis = MagicMock()
 
-    with patch("redis.from_url", return_value=mock_redis):
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         publish_job_update(
             job_id=456, run_id=123, status="in_progress", conclusion=None, data={"step": "build"}
         )
@@ -153,7 +159,12 @@ def test_publish_job_update():
 
 def test_publish_job_update_handles_error():
     """Test that job update publish handles errors gracefully."""
-    with patch("redis.from_url", side_effect=Exception("Redis error")):
+    mock_redis = MagicMock()
+    mock_redis.publish.side_effect = Exception("Redis error")
+
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         # Should not raise
         publish_job_update(job_id=456, run_id=123, status="in_progress")
 
@@ -162,7 +173,9 @@ def test_publish_analysis_complete():
     """Test publishing analysis completion."""
     mock_redis = MagicMock()
 
-    with patch("redis.from_url", return_value=mock_redis):
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         publish_analysis_complete(log_id=789, analysis_id=101, data={"confidence": 0.95})
 
         # Verify publish was called
@@ -179,7 +192,12 @@ def test_publish_analysis_complete():
 
 def test_publish_analysis_complete_handles_error():
     """Test that analysis complete publish handles errors gracefully."""
-    with patch("redis.from_url", side_effect=Exception("Redis error")):
+    mock_redis = MagicMock()
+    mock_redis.publish.side_effect = Exception("Redis error")
+
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         # Should not raise
         publish_analysis_complete(log_id=789, analysis_id=101)
 
@@ -188,7 +206,9 @@ def test_publish_with_none_data():
     """Test that publish functions handle None data."""
     mock_redis = MagicMock()
 
-    with patch("redis.from_url", return_value=mock_redis):
+    with patch(
+        "app.infrastructure.websocket.pubsub._get_sync_redis", return_value=mock_redis
+    ):
         publish_workflow_run_update(run_id=123, status="completed", data=None)
 
         call_args = mock_redis.publish.call_args

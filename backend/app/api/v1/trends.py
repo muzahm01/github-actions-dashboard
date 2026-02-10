@@ -144,7 +144,7 @@ def _generate_sample_points(
     variance: float = 0.1,
 ) -> list[TrendPointResponse]:
     """Generate sample data points for demonstration."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     points = []
     current = start
@@ -246,7 +246,7 @@ async def get_failure_analysis(
 @router.get("/summary", response_model=DashboardTrendSummaryResponse)
 async def get_trend_summary() -> DashboardTrendSummaryResponse:
     """Get summary of trends for dashboard."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     # This would query actual data from DB
     today_runs = random.randint(50, 100)
@@ -300,7 +300,7 @@ async def get_workflow_trend(
     days: int = Query(default=30, ge=1, le=365),
 ) -> WorkflowTrendResponse:
     """Get trend data for a specific workflow."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=days)
@@ -329,7 +329,7 @@ async def get_repository_trend(
     days: int = Query(default=30, ge=1, le=365),
 ) -> RepositoryTrendResponse:
     """Get trend data for a specific repository."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     return RepositoryTrendResponse(
         repository_id=repository_id,

@@ -23,6 +23,8 @@ class FailureDetail:
 class TestResult:
     """Immutable test result value object."""
 
+    __test__ = False  # Prevent pytest collection
+
     framework: str
     total: int
     passed: int

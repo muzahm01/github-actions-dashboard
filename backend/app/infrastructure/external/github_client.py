@@ -284,16 +284,42 @@ class GitHubClient:
 
         return jobs
 
-    async def download_job_logs(self, owner: str, repo: str, job_id: int) -> str:
-        """Download logs for a job."""
+    async def download_job_logs(
+        self,
+        owner: str,
+        repo: str,
+        job_id: int,
+        max_size_bytes: int = 10 * 1024 * 1024,
+    ) -> str:
+        """Download logs for a job using streaming to limit memory usage.
+
+        Args:
+            owner: Repository owner.
+            repo: Repository name.
+            job_id: GitHub job ID.
+            max_size_bytes: Maximum log size to download (default 10MB).
+                Logs exceeding this size are truncated with a warning.
+        """
         client = await self._get_client()
         try:
-            response = await client.get(
+            async with client.stream(
+                "GET",
                 f"/repos/{owner}/{repo}/actions/jobs/{job_id}/logs",
                 follow_redirects=True,
-            )
-            response.raise_for_status()
-            return response.text
+            ) as response:
+                response.raise_for_status()
+                chunks: list[bytes] = []
+                total = 0
+                async for chunk in response.aiter_bytes(chunk_size=64 * 1024):
+                    total += len(chunk)
+                    if total > max_size_bytes:
+                        chunks.append(chunk[: max_size_bytes - (total - len(chunk))])
+                        logger.warning(
+                            f"Log for job {job_id} truncated at {max_size_bytes} bytes"
+                        )
+                        break
+                    chunks.append(chunk)
+                return b"".join(chunks).decode("utf-8", errors="replace")
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 410:
                 # Logs expired

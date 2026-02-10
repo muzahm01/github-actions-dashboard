@@ -10,18 +10,17 @@ from app.infrastructure.database.repositories.base import BaseRepository
 class TestResultRepository(BaseRepository[TestResult]):
     """Repository for managing test result entities."""
 
+    __test__ = False  # Prevent pytest collection
+
     def __init__(self, session: AsyncSession) -> None:
         """Initialize with session."""
         super().__init__(session, TestResult)
 
-    async def get_by_log_id(self, log_id: int, limit: int = 100, offset: int = 0) -> list[TestResult]:
+    async def get_by_log_id(
+        self, log_id: int, limit: int = 100, offset: int = 0
+    ) -> list[TestResult]:
         """Get all test results for a log."""
-        stmt = (
-            select(TestResult)
-            .where(TestResult.log_id == log_id)
-            .limit(limit)
-            .offset(offset)
-        )
+        stmt = select(TestResult).where(TestResult.log_id == log_id).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
