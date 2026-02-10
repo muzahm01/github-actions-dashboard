@@ -14,9 +14,14 @@ class TestResultRepository(BaseRepository[TestResult]):
         """Initialize with session."""
         super().__init__(session, TestResult)
 
-    async def get_by_log_id(self, log_id: int) -> list[TestResult]:
+    async def get_by_log_id(self, log_id: int, limit: int = 100, offset: int = 0) -> list[TestResult]:
         """Get all test results for a log."""
-        stmt = select(TestResult).where(TestResult.log_id == log_id)
+        stmt = (
+            select(TestResult)
+            .where(TestResult.log_id == log_id)
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

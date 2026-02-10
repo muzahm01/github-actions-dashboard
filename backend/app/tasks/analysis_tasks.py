@@ -33,7 +33,7 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180)
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="10/m")
 def analyze_error_log(  # type: ignore[no-untyped-def]
     self,
     log_id: int,
@@ -149,7 +149,7 @@ def analyze_error_log(  # type: ignore[no-untyped-def]
         raise self.retry(exc=e, countdown=120) from e
 
 
-@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180)
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="20/m")
 def generate_embedding(  # type: ignore[no-untyped-def]
     self,
     log_id: int,
@@ -224,7 +224,7 @@ def generate_embedding(  # type: ignore[no-untyped-def]
         raise self.retry(exc=e, countdown=60) from e
 
 
-@celery_app.task(soft_time_limit=300, time_limit=360)
+@celery_app.task(soft_time_limit=300, time_limit=360, rate_limit="5/m")
 def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = None) -> dict[str, Any]:
     """
     Generate embeddings for multiple logs in batch and save to database.
@@ -295,7 +295,7 @@ def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = N
         return {"error": str(e), "logs_processed": 0}
 
 
-@celery_app.task(soft_time_limit=600, time_limit=660)
+@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="2/m")
 def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict[str, Any]:
     """
     Generate embeddings for logs that don't have them.
@@ -348,7 +348,7 @@ def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict[str, 
         return {"error": str(e), "status": "failed"}
 
 
-@celery_app.task(soft_time_limit=120, time_limit=180)
+@celery_app.task(soft_time_limit=120, time_limit=180, rate_limit="10/m")
 def summarize_run_failures(run_id: int, failures: list[dict[str, Any]]) -> dict[str, Any]:
     """Summarize all failures in a workflow run."""
     logger.info(f"Summarizing failures for run {run_id}")

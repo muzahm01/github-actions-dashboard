@@ -41,7 +41,7 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360)
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")
 def sync_repository(self, owner: str, repo: str) -> dict[str, Any]:  # type: ignore[no-untyped-def]
     """Sync a single repository's workflows and runs."""
     logger.info(f"Syncing repository: {owner}/{repo}")
@@ -119,7 +119,7 @@ def _extract_error_content(log_content: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360)
+@celery_app.task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360, rate_limit="30/m")
 def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict[str, Any]:  # type: ignore[no-untyped-def]
     """Process a workflow run - fetch jobs and logs, parse test results, save to database."""
     logger.info(f"Processing workflow run: {owner}/{repo}#{run_id}")
@@ -275,7 +275,7 @@ def process_workflow_run(self, owner: str, repo: str, run_id: int) -> dict[str, 
         raise self.retry(exc=e, countdown=60) from e
 
 
-@celery_app.task(soft_time_limit=600, time_limit=660)
+@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="5/m")
 def sync_all_workflows() -> dict[str, Any]:
     """Sync all configured repositories (scheduled task)."""
     logger.info("Starting scheduled workflow sync")

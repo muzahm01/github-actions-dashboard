@@ -20,8 +20,8 @@ class TestAnalyzeError:
         mock_log.id = 1
 
         with (
-            patch("app.api.v1.analysis.LogRepository") as mock_log_repo_class,
-            patch("app.api.v1.analysis.ErrorAnalysisRepository") as mock_analysis_repo_class,
+            patch("app.application.services.analysis_query_service.LogRepository") as mock_log_repo_class,
+            patch("app.application.services.analysis_query_service.ErrorAnalysisRepository") as mock_analysis_repo_class,
             patch("app.api.v1.analysis.analyze_error_log") as mock_task,
         ):
             mock_log_repo = AsyncMock()
@@ -59,8 +59,8 @@ class TestAnalyzeError:
         mock_analysis.confidence_score = 0.9
 
         with (
-            patch("app.api.v1.analysis.LogRepository") as mock_log_repo_class,
-            patch("app.api.v1.analysis.ErrorAnalysisRepository") as mock_analysis_repo_class,
+            patch("app.application.services.analysis_query_service.LogRepository") as mock_log_repo_class,
+            patch("app.application.services.analysis_query_service.ErrorAnalysisRepository") as mock_analysis_repo_class,
         ):
             mock_log_repo = AsyncMock()
             mock_log_repo.get_by_id.return_value = mock_log
@@ -85,7 +85,7 @@ class TestAnalyzeError:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return 404 when log doesn't exist."""
-        with patch("app.api.v1.analysis.LogRepository") as mock_log_repo_class:
+        with patch("app.application.services.analysis_query_service.LogRepository") as mock_log_repo_class:
             mock_log_repo = AsyncMock()
             mock_log_repo.get_by_id.return_value = None
             mock_log_repo_class.return_value = mock_log_repo
@@ -118,7 +118,7 @@ class TestGetAnalysis:
         mock_analysis.llm_model = "claude-sonnet-4"
         mock_analysis.analyzed_at = None
 
-        with patch("app.api.v1.analysis.ErrorAnalysisRepository") as mock_repo_class:
+        with patch("app.application.services.analysis_query_service.ErrorAnalysisRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_analysis
             mock_repo_class.return_value = mock_repo
@@ -135,7 +135,7 @@ class TestGetAnalysis:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return 404 when analysis doesn't exist."""
-        with patch("app.api.v1.analysis.ErrorAnalysisRepository") as mock_repo_class:
+        with patch("app.application.services.analysis_query_service.ErrorAnalysisRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo
@@ -161,7 +161,7 @@ class TestFindSimilarErrors:
         mock_similar_log.id = 2
         mock_similar_log.category = "test_failure"
 
-        with patch("app.api.v1.analysis.LogRepository") as mock_log_repo_class:
+        with patch("app.application.services.analysis_query_service.LogRepository") as mock_log_repo_class:
             mock_log_repo = AsyncMock()
             mock_log_repo.get_by_id.return_value = mock_log
             mock_log_repo.find_similar_by_embedding.return_value = [(mock_similar_log, 0.85)]
@@ -187,7 +187,7 @@ class TestFindSimilarErrors:
         mock_log.id = 1
         mock_log.embedding = None
 
-        with patch("app.api.v1.analysis.LogRepository") as mock_log_repo_class:
+        with patch("app.application.services.analysis_query_service.LogRepository") as mock_log_repo_class:
             mock_log_repo = AsyncMock()
             mock_log_repo.get_by_id.return_value = mock_log
             mock_log_repo_class.return_value = mock_log_repo

@@ -29,6 +29,7 @@ def get_engine(settings: Settings | None = None) -> AsyncEngine:
             pool_pre_ping=True,
             pool_size=10,
             max_overflow=20,
+            pool_recycle=3600,
         )
     return _engine
 

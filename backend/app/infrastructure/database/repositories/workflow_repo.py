@@ -23,9 +23,17 @@ class WorkflowRepository(BaseRepository[Workflow]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_repo_id(self, repo_id: int) -> list[Workflow]:
+    async def get_by_repo_id(
+        self, repo_id: int, limit: int = 100, offset: int = 0
+    ) -> list[Workflow]:
         """Get all workflows for a repository."""
-        stmt = select(Workflow).where(Workflow.repo_id == repo_id)
+        stmt = (
+            select(Workflow)
+            .where(Workflow.repo_id == repo_id)
+            .options(selectinload(Workflow.workflow_runs))
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

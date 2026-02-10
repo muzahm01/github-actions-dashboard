@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.repositories.workflow_run_repo import WorkflowRunRepository
+from app.application.services.workflow_run_query_service import WorkflowRunQueryService
 from app.infrastructure.database.session import get_db
 
 router = APIRouter()
@@ -19,15 +19,8 @@ async def list_runs(
     conclusion: str | None = Query(default=None),
 ) -> dict[str, Any]:
     """List all workflow runs with pagination and optional filtering."""
-    repo = WorkflowRunRepository(db)
-
-    # If filtering by failure conclusion, use specialized method
-    if conclusion == "failure":
-        runs = await repo.get_recent_failures(limit=limit)
-        total = len(runs)
-    else:
-        runs = await repo.get_all(limit=limit, offset=offset)
-        total = await repo.count()
+    service = WorkflowRunQueryService(db)
+    runs, total = await service.list_runs(limit=limit, offset=offset, conclusion=conclusion)
 
     return {
         "runs": [
@@ -58,8 +51,8 @@ async def get_recent_failures(
     limit: int = Query(default=10, ge=1, le=50),
 ) -> list[dict[str, Any]]:
     """Get recent failed workflow runs."""
-    repo = WorkflowRunRepository(db)
-    runs = await repo.get_recent_failures(limit=limit)
+    service = WorkflowRunQueryService(db)
+    runs = await service.get_recent_failures(limit=limit)
 
     return [
         {
@@ -87,8 +80,8 @@ async def get_run(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Get workflow run details with jobs."""
-    repo = WorkflowRunRepository(db)
-    run = await repo.get_with_jobs(run_id)
+    service = WorkflowRunQueryService(db)
+    run = await service.get_run_with_jobs(run_id)
 
     if not run:
         raise HTTPException(

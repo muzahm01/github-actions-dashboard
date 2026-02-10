@@ -23,15 +23,28 @@ class JobRepository(BaseRepository[Job]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_run_id(self, run_id: int) -> list[Job]:
+    async def get_by_run_id(self, run_id: int, limit: int = 100, offset: int = 0) -> list[Job]:
         """Get all jobs for a workflow run."""
-        stmt = select(Job).where(Job.run_id == run_id)
+        stmt = (
+            select(Job)
+            .where(Job.run_id == run_id)
+            .options(selectinload(Job.steps))
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_failed_jobs(self, run_id: int) -> list[Job]:
+    async def get_failed_jobs(self, run_id: int, limit: int = 100, offset: int = 0) -> list[Job]:
         """Get failed jobs for a run."""
-        stmt = select(Job).where(Job.run_id == run_id).where(Job.conclusion == "failure")
+        stmt = (
+            select(Job)
+            .where(Job.run_id == run_id)
+            .where(Job.conclusion == "failure")
+            .options(selectinload(Job.steps))
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

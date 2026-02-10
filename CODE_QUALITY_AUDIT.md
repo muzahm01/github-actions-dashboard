@@ -399,17 +399,28 @@ Only 2 reusable components in `components/`. As views grow past 400 lines, extra
 
 ### Phase 2: Next Sprint (Weeks 2-3) — High Priority
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 8 | Introduce application services for the 14 API routers that bypass them | Architecture | L | Correct Clean Architecture |
-| 9 | Add tests for `security.py` (raise to 90%+ coverage) | Testing | M | Security-critical code covered |
-| 10 | Add tests for `health.py` (raise to 90%+ coverage) | Testing | S | Infrastructure reliability |
-| 11 | Add `rate_limit` to GitHub/Anthropic API tasks | Performance | S | Prevents rate limit exhaustion |
-| 12 | Add pagination to 7 unbounded repository methods | Performance | M | Prevents memory spikes |
-| 13 | Add `selectinload()` to remaining repository methods | Performance | M | Eliminates N+1 queries |
-| 14 | Add `pool_recycle=3600` to async engine config | Performance | S | Prevents stale connections |
-| 15 | Fix README pnpm → npm contradiction | Documentation | S | Prevents contributor confusion |
-| 16 | Plan `openai` v1→v2 migration | Dependencies | M | Stay current on SDK |
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 8 | Introduce application services for the 14 API routers that bypass them | Architecture | L | Correct Clean Architecture | ✅ Done |
+| 9 | Add tests for `security.py` (raise to 90%+ coverage) | Testing | M | Security-critical code covered | ✅ Done |
+| 10 | Add tests for `health.py` (raise to 90%+ coverage) | Testing | S | Infrastructure reliability | ✅ Done |
+| 11 | Add `rate_limit` to GitHub/Anthropic API tasks | Performance | S | Prevents rate limit exhaustion | ✅ Done |
+| 12 | Add pagination to 7 unbounded repository methods | Performance | M | Prevents memory spikes | ✅ Done |
+| 13 | Add `selectinload()` to remaining repository methods | Performance | M | Eliminates N+1 queries | ✅ Done |
+| 14 | Add `pool_recycle=3600` to async engine config | Performance | S | Prevents stale connections | ✅ Done |
+| 15 | Fix README pnpm → npm contradiction | Documentation | S | Prevents contributor confusion | ✅ Done |
+| 16 | Plan `openai` v1→v2 migration | Dependencies | M | Stay current on SDK | ✅ Done |
+
+**Phase 2 completion notes:**
+- **Task 8** (Architecture): Created 7 application services (`DashboardService`, `RepositoryQueryService`, `WorkflowQueryService`, `WorkflowRunQueryService`, `JobQueryService`, `AnalysisQueryService`, `LogSearchService`) and refactored 7 routers (`dashboard.py`, `repositories.py`, `workflows.py`, `runs.py`, `jobs.py`, `analysis.py`, `search.py`) to use them instead of importing directly from infrastructure. Updated all 6 affected test files to patch at the service module level. Updated `__init__.py` exports and coverage exclusions.
+- **Task 9** (`security.py`): Added 24 new tests covering `verify_api_key`, `validate_webhook_url`, `escape_like_pattern`, and `RateLimitMiddleware._check_memory_rate_limit`.
+- **Task 10** (`health.py`): Expanded from 4 to 10 tests, adding DB failure (503), Redis failure (503), both fail (503), and response format tests.
+- **Task 11** (Rate limits): Added `rate_limit` to all GitHub API tasks (`"30/m"`), sync_all (`"5/m"`), Anthropic LLM tasks (`"10/m"`), and OpenAI embedding tasks (`"20/m"`, batch: `"5/m"`, backfill: `"2/m"`).
+- **Tasks 12-13** (Pagination + selectinload): Added `limit`/`offset` defaults to `get_active()`, `get_by_owner()`, `get_by_run_id()`, `get_by_job_id()`, `get_by_log_id()`, `get_runs_in_timerange()`, `get_runs_before_date()`, `get_by_repo_id()`. Added `selectinload()` to `get_recent_failures()`, `get_by_branch()`, `get_by_repo_id()`, `get_logs_with_errors()`, `get_by_category()`.
+- **Task 14** (`session.py`): Added `pool_recycle=3600` to `create_async_engine()`.
+- **Task 15** (`README.md`): Changed `pnpm 9+` to `npm`.
+- **Task 16** (openai migration): Migration is very low risk — only `embedding_client.py` uses OpenAI, only the Embeddings API. The `AsyncOpenAI` client pattern and `embeddings.create()` interface are identical between v1 and v2. Migration = update `pyproject.toml` + run tests. Zero code changes expected.
+- **All 322 unit tests pass**, ruff is clean.
 
 ### Phase 3: This Quarter (Weeks 4-8) — Medium Priority
 

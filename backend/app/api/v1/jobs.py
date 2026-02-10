@@ -5,8 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.repositories.job_repo import JobRepository
-from app.infrastructure.database.repositories.log_repo import LogRepository
+from app.application.services.job_query_service import JobQueryService
 from app.infrastructure.database.session import get_db
 
 router = APIRouter()
@@ -18,8 +17,8 @@ async def get_job(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Get job details."""
-    repo = JobRepository(db)
-    job = await repo.get_by_id(job_id)
+    service = JobQueryService(db)
+    job = await service.get_job(job_id)
 
     if not job:
         raise HTTPException(
@@ -46,8 +45,8 @@ async def get_job_logs(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Get job logs."""
-    job_repo = JobRepository(db)
-    job = await job_repo.get_by_id(job_id)
+    service = JobQueryService(db)
+    job = await service.get_job(job_id)
 
     if not job:
         raise HTTPException(
@@ -55,8 +54,7 @@ async def get_job_logs(
             detail=f"Job with id {job_id} not found",
         )
 
-    log_repo = LogRepository(db)
-    logs = await log_repo.get_by_job_id(job_id)
+    logs = await service.get_job_logs(job_id)
 
     return {
         "job_id": job_id,

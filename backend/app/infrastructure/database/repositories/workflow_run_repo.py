@@ -41,6 +41,7 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
             select(WorkflowRun)
             .where(WorkflowRun.conclusion == "failure")
             .order_by(desc(WorkflowRun.created_at))
+            .options(selectinload(WorkflowRun.jobs))
             .limit(limit)
         )
         result = await self._session.execute(stmt)
@@ -55,6 +56,7 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
             .where(WorkflowRun.workflow_id == workflow_id)
             .where(WorkflowRun.head_branch == branch)
             .order_by(desc(WorkflowRun.created_at))
+            .options(selectinload(WorkflowRun.jobs))
             .limit(limit)
         )
         result = await self._session.execute(stmt)
@@ -70,13 +72,18 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_runs_in_timerange(self, start: datetime, end: datetime) -> list[WorkflowRun]:
+    async def get_runs_in_timerange(
+        self, start: datetime, end: datetime, limit: int = 100, offset: int = 0
+    ) -> list[WorkflowRun]:
         """Get runs within a time range."""
         stmt = (
             select(WorkflowRun)
             .where(WorkflowRun.created_at >= start)
             .where(WorkflowRun.created_at <= end)
             .order_by(desc(WorkflowRun.created_at))
+            .options(selectinload(WorkflowRun.jobs))
+            .limit(limit)
+            .offset(offset)
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
@@ -95,12 +102,16 @@ class WorkflowRunRepository(BaseRepository[WorkflowRun]):
             run = WorkflowRun(**run_data)
             return await self.create(run)
 
-    async def get_runs_before_date(self, cutoff_date: datetime) -> list[WorkflowRun]:
+    async def get_runs_before_date(
+        self, cutoff_date: datetime, limit: int = 500, offset: int = 0
+    ) -> list[WorkflowRun]:
         """Get runs created before the cutoff date for cleanup."""
         stmt = (
             select(WorkflowRun)
             .where(WorkflowRun.created_at < cutoff_date)
             .options(selectinload(WorkflowRun.jobs))
+            .limit(limit)
+            .offset(offset)
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

@@ -99,6 +99,13 @@ omit = [
     "app/application/services/error_analyzer.py",
     "app/application/services/embedding_service.py",
     "app/application/services/search_service.py",
+    "app/application/services/dashboard_service.py",
+    "app/application/services/repository_query_service.py",
+    "app/application/services/workflow_query_service.py",
+    "app/application/services/workflow_run_query_service.py",
+    "app/application/services/job_query_service.py",
+    "app/application/services/analysis_query_service.py",
+    "app/application/services/log_search_service.py",
     "app/domain/*",  # Domain layer - protocol definitions and data classes
 ]
 

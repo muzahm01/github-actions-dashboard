@@ -2,6 +2,7 @@
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.infrastructure.database.models.log import Log
 from app.infrastructure.database.repositories.base import BaseRepository
@@ -14,9 +15,9 @@ class LogRepository(BaseRepository[Log]):
         """Initialize with session."""
         super().__init__(session, Log)
 
-    async def get_by_job_id(self, job_id: int) -> list[Log]:
+    async def get_by_job_id(self, job_id: int, limit: int = 100, offset: int = 0) -> list[Log]:
         """Get all logs for a job."""
-        stmt = select(Log).where(Log.job_id == job_id)
+        stmt = select(Log).where(Log.job_id == job_id).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -28,13 +29,23 @@ class LogRepository(BaseRepository[Log]):
 
     async def get_logs_with_errors(self, limit: int = 50) -> list[Log]:
         """Get logs that have error content."""
-        stmt = select(Log).where(Log.error_content.isnot(None)).limit(limit)
+        stmt = (
+            select(Log)
+            .where(Log.error_content.isnot(None))
+            .options(selectinload(Log.error_analyses))
+            .limit(limit)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_by_category(self, category: str, limit: int = 50) -> list[Log]:
         """Get logs by error category."""
-        stmt = select(Log).where(Log.category == category).limit(limit)
+        stmt = (
+            select(Log)
+            .where(Log.category == category)
+            .options(selectinload(Log.error_analyses))
+            .limit(limit)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
