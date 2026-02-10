@@ -1,15 +1,12 @@
 """Error analysis endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.repositories.error_analysis_repo import (
-    ErrorAnalysisRepository,
-)
-from app.infrastructure.database.repositories.log_repo import LogRepository
+from app.application.services.analysis_query_service import AnalysisQueryService
 from app.infrastructure.database.session import get_db
 from app.tasks.analysis_tasks import analyze_error_log
 
@@ -33,14 +30,14 @@ class SimilarErrorRequest(BaseModel):
 async def analyze_error(
     request: AnalysisRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """
     Analyze error with LLM.
 
     Queues the analysis task and returns immediately with pending status.
     """
-    log_repo = LogRepository(db)
-    log = await log_repo.get_by_id(request.log_id)
+    service = AnalysisQueryService(db)
+    log = await service.get_log(request.log_id)
 
     if not log:
         raise HTTPException(
@@ -48,9 +45,7 @@ async def analyze_error(
             detail=f"Log with id {request.log_id} not found",
         )
 
-    # Check if analysis already exists
-    analysis_repo = ErrorAnalysisRepository(db)
-    existing = await analysis_repo.get_by_log_id(request.log_id)
+    existing = await service.get_existing_analysis(request.log_id)
 
     if existing:
         return {
@@ -77,10 +72,10 @@ async def analyze_error(
 async def get_analysis(
     analysis_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get existing analysis by ID."""
-    repo = ErrorAnalysisRepository(db)
-    analysis = await repo.get_by_id(analysis_id)
+    service = AnalysisQueryService(db)
+    analysis = await service.get_analysis_by_id(analysis_id)
 
     if not analysis:
         raise HTTPException(
@@ -106,45 +101,19 @@ async def get_analysis(
 async def find_similar_errors(
     request: SimilarErrorRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """
     Find similar errors using vector similarity search.
 
     Requires the log to have an embedding generated.
     """
-    log_repo = LogRepository(db)
-    log = await log_repo.get_by_id(request.log_id)
+    service = AnalysisQueryService(db)
+    result = await service.find_similar_errors(request.log_id, limit=request.limit)
 
-    if not log:
+    if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Log with id {request.log_id} not found",
         )
 
-    # Check if log has embedding
-    if not log.embedding:
-        return {
-            "log_id": request.log_id,
-            "similar_errors": [],
-            "message": "Log has no embedding. Generate embedding first.",
-        }
-
-    # Find similar logs
-    similar_logs = await log_repo.find_similar_by_embedding(
-        embedding=log.embedding,
-        limit=request.limit,
-        threshold=0.7,
-    )
-
-    return {
-        "log_id": request.log_id,
-        "similar_errors": [
-            {
-                "log_id": similar_log.id,
-                "similarity_score": round(score, 3),
-                "category": similar_log.category,
-            }
-            for similar_log, score in similar_logs
-            if similar_log.id != request.log_id  # Exclude the source log
-        ],
-    }
+    return result

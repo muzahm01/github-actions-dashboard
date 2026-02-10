@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.domain.entities.error_analysis import ErrorAnalysis
 from app.domain.entities.test_result import TestResult
@@ -65,11 +65,11 @@ class LLMAnalysisResult:
 class CacheClient(Protocol):
     """Protocol for cache operations."""
 
-    async def get_analysis(self, log_content: str) -> dict | None:
+    async def get_analysis(self, log_content: str) -> dict[str, Any] | None:
         """Get cached analysis."""
         ...
 
-    async def set_analysis(self, log_content: str, analysis: dict) -> None:
+    async def set_analysis(self, log_content: str, analysis: dict[str, Any]) -> None:
         """Cache analysis."""
         ...
 

@@ -42,7 +42,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       lastUpdated.value = new Date()
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch dashboard data'
-      console.error('Dashboard fetch error:', e)
+      // Error is captured in error.value for UI display
     } finally {
       isLoading.value = false
     }
@@ -53,7 +53,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       stats.value = await api.getDashboardStats()
       lastUpdated.value = new Date()
     } catch (e) {
-      console.error('Failed to refresh stats:', e)
+      error.value = e instanceof Error ? e.message : 'Failed to refresh stats'
     }
   }
 
@@ -61,7 +61,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     try {
       recentFailures.value = await api.getRecentFailures(10)
     } catch (e) {
-      console.error('Failed to refresh failures:', e)
+      error.value = e instanceof Error ? e.message : 'Failed to refresh failures'
     }
   }
 

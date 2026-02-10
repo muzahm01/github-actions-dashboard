@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 
@@ -39,7 +39,7 @@ class NotificationSender(ABC):
         ...
 
     @abstractmethod
-    def format_message(self, notification: Notification) -> dict:
+    def format_message(self, notification: Notification) -> dict[str, Any]:
         """Format notification for the channel."""
         ...
 
@@ -74,7 +74,7 @@ class SlackSender(NotificationSender):
             logger.error(f"Failed to send Slack notification: {e}")
             return NotificationResult(success=False, error=str(e))
 
-    def format_message(self, notification: Notification) -> dict:
+    def format_message(self, notification: Notification) -> dict[str, Any]:
         """Format notification as Slack message."""
         # Get color based on notification type
         color = self._get_color(notification.notification_type)
@@ -183,7 +183,7 @@ class DiscordSender(NotificationSender):
             logger.error(f"Failed to send Discord notification: {e}")
             return NotificationResult(success=False, error=str(e))
 
-    def format_message(self, notification: Notification) -> dict:
+    def format_message(self, notification: Notification) -> dict[str, Any]:
         """Format notification as Discord embed."""
         color = self._get_color(notification.notification_type)
 
@@ -250,7 +250,7 @@ class WebhookSender(NotificationSender):
             logger.error(f"Failed to send webhook notification: {e}")
             return NotificationResult(success=False, error=str(e))
 
-    def format_message(self, notification: Notification) -> dict:
+    def format_message(self, notification: Notification) -> dict[str, Any]:
         """Format notification as generic JSON payload."""
         return {
             "type": notification.notification_type.value,
@@ -306,7 +306,7 @@ class NotificationService:
         notification_type: NotificationType,
         title: str,
         message: str,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
         channels: list[NotificationChannel] | None = None,
     ) -> dict[NotificationChannel, NotificationResult]:
         """Send notification to configured channels."""

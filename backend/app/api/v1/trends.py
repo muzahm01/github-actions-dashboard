@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -69,10 +70,10 @@ class FailureAnalysisResponse(BaseModel):
 
     total_failures: int
     unique_errors: int
-    top_failing_workflows: list[dict]
-    top_failing_repositories: list[dict]
+    top_failing_workflows: list[dict[str, Any]]
+    top_failing_repositories: list[dict[str, Any]]
     failure_by_day_of_week: dict[str, int]
-    most_common_errors: list[dict]
+    most_common_errors: list[dict[str, Any]]
     average_time_to_fix: float | None
 
 
@@ -90,8 +91,8 @@ class DashboardTrendSummaryResponse(BaseModel):
     failures_change_percent: float
     avg_duration_seconds: float
     duration_change_percent: float
-    most_active_repositories: list[dict]
-    most_failing_workflows: list[dict]
+    most_active_repositories: list[dict[str, Any]]
+    most_failing_workflows: list[dict[str, Any]]
 
 
 class WorkflowTrendResponse(BaseModel):
@@ -115,7 +116,7 @@ class RepositoryTrendResponse(BaseModel):
     success_rate: float
     workflows_count: int
     failure_trend: TrendDirection
-    top_failing_workflows: list[dict]
+    top_failing_workflows: list[dict[str, Any]]
 
 
 def _calculate_direction(values: list[float]) -> TrendDirection:
@@ -143,7 +144,7 @@ def _generate_sample_points(
     variance: float = 0.1,
 ) -> list[TrendPointResponse]:
     """Generate sample data points for demonstration."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     points = []
     current = start
@@ -245,7 +246,7 @@ async def get_failure_analysis(
 @router.get("/summary", response_model=DashboardTrendSummaryResponse)
 async def get_trend_summary() -> DashboardTrendSummaryResponse:
     """Get summary of trends for dashboard."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     # This would query actual data from DB
     today_runs = random.randint(50, 100)
@@ -299,7 +300,7 @@ async def get_workflow_trend(
     days: int = Query(default=30, ge=1, le=365),
 ) -> WorkflowTrendResponse:
     """Get trend data for a specific workflow."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=days)
@@ -328,7 +329,7 @@ async def get_repository_trend(
     days: int = Query(default=30, ge=1, le=365),
 ) -> RepositoryTrendResponse:
     """Get trend data for a specific repository."""
-    import random
+    import random  # nosec B311 - used for demo/mock data only
 
     return RepositoryTrendResponse(
         repository_id=repository_id,

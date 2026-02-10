@@ -7,6 +7,8 @@ import pytest
 from app.infrastructure.database.repositories.workflow_repo import WorkflowRepository
 
 
+pytestmark = pytest.mark.unit
+
 class TestWorkflowRepository:
     """Tests for WorkflowRepository."""
 

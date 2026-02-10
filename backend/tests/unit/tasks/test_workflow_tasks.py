@@ -3,6 +3,10 @@
 from unittest.mock import MagicMock, patch
 
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 class TestWorkflowTasks:
     """Tests for workflow Celery tasks."""
 

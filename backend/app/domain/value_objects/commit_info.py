@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -18,7 +19,7 @@ class CommitInfo:
     timestamp: datetime | None = None
 
     @classmethod
-    def from_github(cls, data: dict) -> CommitInfo:
+    def from_github(cls, data: dict[str, Any]) -> CommitInfo:
         """Create from GitHub API response."""
         commit_data = data.get("commit", data)
         author_data = commit_data.get("author", {})

@@ -8,6 +8,8 @@ from app.infrastructure.database.repositories.error_analysis_repo import (
     ErrorAnalysisRepository,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestErrorAnalysisRepository:
     """Tests for ErrorAnalysisRepository."""

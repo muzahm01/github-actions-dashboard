@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestListRuns:
     """Tests for GET /api/v1/runs/ endpoint."""
 
@@ -38,7 +40,7 @@ class TestListRuns:
         mock_run2.html_url = "https://github.com/org/repo/actions/runs/123457"
         mock_run2.workflow_id = 1
 
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = [mock_run1, mock_run2]
             mock_repo.count.return_value = 2
@@ -57,7 +59,7 @@ class TestListRuns:
     @pytest.mark.asyncio
     async def test_list_runs_empty(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return empty list when no runs exist."""
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = []
             mock_repo.count.return_value = 0
@@ -75,7 +77,7 @@ class TestListRuns:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should support pagination parameters."""
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = []
             mock_repo.count.return_value = 50
@@ -104,7 +106,7 @@ class TestListRuns:
         mock_run.html_url = "https://github.com/org/repo/actions/runs/123456"
         mock_run.workflow_id = 1
 
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_recent_failures.return_value = [mock_run]
             mock_repo_class.return_value = mock_repo
@@ -147,7 +149,7 @@ class TestGetRun:
         mock_job.conclusion = "success"
         mock_run.jobs = [mock_job]
 
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_with_jobs.return_value = mock_run
             mock_repo_class.return_value = mock_repo
@@ -166,7 +168,7 @@ class TestGetRun:
     @pytest.mark.asyncio
     async def test_get_run_not_found(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return 404 when run does not exist."""
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_with_jobs.return_value = None
             mock_repo_class.return_value = mock_repo
@@ -201,7 +203,7 @@ class TestGetRecentFailures:
         mock_run.run_started_at = None
         mock_run.duration_seconds = 120
 
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_recent_failures.return_value = [mock_run]
             mock_repo_class.return_value = mock_repo
@@ -219,7 +221,7 @@ class TestGetRecentFailures:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return empty list when no failures."""
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_recent_failures.return_value = []
             mock_repo_class.return_value = mock_repo
@@ -235,7 +237,7 @@ class TestGetRecentFailures:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should respect the limit parameter."""
-        with patch("app.api.v1.runs.WorkflowRunRepository") as mock_repo_class:
+        with patch("app.application.services.workflow_run_query_service.WorkflowRunRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_recent_failures.return_value = []
             mock_repo_class.return_value = mock_repo

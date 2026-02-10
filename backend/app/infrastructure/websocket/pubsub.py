@@ -1,12 +1,17 @@
 """Redis pub/sub bridge for WebSocket notifications from Celery tasks."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 from contextlib import suppress
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import redis.asyncio as aioredis
+
+if TYPE_CHECKING:
+    import redis
 
 from app.config import get_settings
 from app.infrastructure.websocket.manager import connection_manager
@@ -85,6 +90,33 @@ class WebSocketPubSub:
 pubsub_manager = WebSocketPubSub()
 
 
+# Shared sync Redis connection pool for Celery task publish helpers.
+# Avoids creating/destroying a connection per publish call.
+_sync_redis_pool: redis.ConnectionPool | None = None
+
+
+def _get_sync_redis() -> redis.Redis[str]:
+    """Get a sync Redis client backed by a shared connection pool."""
+    import redis
+
+    global _sync_redis_pool  # noqa: PLW0603
+    if _sync_redis_pool is None:
+        _sync_redis_pool = redis.ConnectionPool.from_url(
+            str(settings.redis_url),
+            decode_responses=True,
+        )
+    return redis.Redis(connection_pool=_sync_redis_pool)  # type: ignore[return-value]
+
+
+def _publish(message: dict[str, Any]) -> None:
+    """Publish a message to the WebSocket broadcast channel."""
+    try:
+        r = _get_sync_redis()
+        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
+    except Exception as e:
+        logger.error(f"Failed to publish message: {e}")
+
+
 # Helper functions for publishing from Celery tasks
 def publish_workflow_run_update(
     run_id: int,
@@ -93,21 +125,15 @@ def publish_workflow_run_update(
     data: dict[str, Any] | None = None,
 ) -> None:
     """Publish workflow run update (can be called from Celery tasks)."""
-    import redis
-
-    try:
-        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
-        message = {
+    _publish(
+        {
             "type": "workflow_run_update",
             "run_id": run_id,
             "status": status,
             "conclusion": conclusion,
             "data": data or {},
         }
-        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
-        r.close()
-    except Exception as e:
-        logger.error(f"Failed to publish workflow run update: {e}")
+    )
 
 
 def publish_job_update(
@@ -118,11 +144,8 @@ def publish_job_update(
     data: dict[str, Any] | None = None,
 ) -> None:
     """Publish job update (can be called from Celery tasks)."""
-    import redis
-
-    try:
-        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
-        message = {
+    _publish(
+        {
             "type": "job_update",
             "job_id": job_id,
             "run_id": run_id,
@@ -130,10 +153,7 @@ def publish_job_update(
             "conclusion": conclusion,
             "data": data or {},
         }
-        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
-        r.close()
-    except Exception as e:
-        logger.error(f"Failed to publish job update: {e}")
+    )
 
 
 def publish_analysis_complete(
@@ -142,20 +162,14 @@ def publish_analysis_complete(
     data: dict[str, Any] | None = None,
 ) -> None:
     """Publish analysis completion (can be called from Celery tasks)."""
-    import redis
-
-    try:
-        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
-        message = {
+    _publish(
+        {
             "type": "analysis_complete",
             "log_id": log_id,
             "analysis_id": analysis_id,
             "data": data or {},
         }
-        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
-        r.close()
-    except Exception as e:
-        logger.error(f"Failed to publish analysis complete: {e}")
+    )
 
 
 def publish_embedding_generated(
@@ -164,20 +178,14 @@ def publish_embedding_generated(
     data: dict[str, Any] | None = None,
 ) -> None:
     """Publish embedding generation completion (can be called from Celery tasks)."""
-    import redis
-
-    try:
-        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
-        message = {
+    _publish(
+        {
             "type": "embedding_generated",
             "log_id": log_id,
             "embedding_size": embedding_size,
             "data": data or {},
         }
-        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
-        r.close()
-    except Exception as e:
-        logger.error(f"Failed to publish embedding generated: {e}")
+    )
 
 
 def publish_test_results_parsed(
@@ -189,11 +197,8 @@ def publish_test_results_parsed(
     data: dict[str, Any] | None = None,
 ) -> None:
     """Publish test result parsing completion (can be called from Celery tasks)."""
-    import redis
-
-    try:
-        r = redis.from_url(str(settings.redis_url))  # type: ignore[no-untyped-call]
-        message = {
+    _publish(
+        {
             "type": "test_results_parsed",
             "log_id": log_id,
             "framework": framework,
@@ -202,7 +207,4 @@ def publish_test_results_parsed(
             "failed": failed,
             "data": data or {},
         }
-        r.publish(WebSocketPubSub.CHANNEL, json.dumps(message))
-        r.close()
-    except Exception as e:
-        logger.error(f"Failed to publish test results parsed: {e}")
+    )

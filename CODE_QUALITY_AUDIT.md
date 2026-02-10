@@ -376,65 +376,113 @@ Only 2 reusable components in `components/`. As views grow past 400 lines, extra
 
 ## 9. Prioritized Action Plan
 
-### Phase 1: Fix Now (Week 1) — Critical + High Risk
+### Phase 1: Fix Now (Week 1) — Critical + High Risk  ✅ COMPLETED (2026-02-09)
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 1 | Fix 5 critical mypy bugs (TS-01 through TS-05) | Type Safety | S | Prevents runtime crashes |
-| 2 | Add `@pytest.mark.unit` to all 288 unit test functions | Testing | M | Enables selective test execution |
-| 3 | Add `index=True` to 8 FK columns + 3 query columns; create Alembic migration | Performance | M | Prevents full table scans |
-| 4 | Add `soft_time_limit`/`time_limit` to all Celery tasks | Performance | S | Prevents hung workers |
-| 5 | Fix `cleanup_old_data()` — use batch deletes + cascade | Performance | S | Prevents memory exhaustion |
-| 6 | Fix 109 bare `dict` → `dict[str, Any]` type annotations | Type Safety | M | Moves toward mypy passing |
-| 7 | Remove unused deps: `python-socketio`, `async-timeout`, `websockets` | Dependencies | S | Reduces attack surface |
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 1 | Fix 5 critical mypy bugs (TS-01 through TS-05) | Type Safety | S | Prevents runtime crashes | ✅ Done |
+| 2 | Add `@pytest.mark.unit` to all 286 unit test functions | Testing | M | Enables selective test execution | ✅ Done |
+| 3 | Add `index=True` to 8 FK columns + 3 query columns; create Alembic migration | Performance | M | Prevents full table scans | ✅ Done |
+| 4 | Add `soft_time_limit`/`time_limit` to all 17 Celery tasks | Performance | S | Prevents hung workers | ✅ Done |
+| 5 | Fix `cleanup_old_data()` — use batch deletes via subqueries | Performance | S | Prevents memory exhaustion | ✅ Done |
+| 6 | Fix bare `dict` → `dict[str, Any]` type annotations across 36 files | Type Safety | M | Moves toward mypy passing | ✅ Done |
+| 7 | Remove unused deps: `python-socketio`, `async-timeout`, `websockets` | Dependencies | S | Reduces attack surface | ✅ Done |
+
+**Phase 1 completion notes:**
+- **TS-01** (`github_client.py`): Changed `_request` return type from `dict[str, Any]` to `Any` since GitHub API returns both dicts and lists.
+- **TS-02** (`prompt_service.py`): Replaced `set.add()` idiom with `dict.fromkeys()` for duplicate-free list.
+- **TS-03** (`maintenance_tasks.py`): Fixed non-existent `ErrorAnalysis.workflow_run_id` and `Log.workflow_run_id` — rewrote to use subqueries through `Log → Job → WorkflowRun` chain.
+- **TS-04** (`github_sync_service.py`): Changed `errors: list[str] = None` to `field(default_factory=list)`.
+- **TS-05** (`notifications.py`): Added explicit `sender: NotificationSender` type annotation before the if/elif/else chain.
+- **Alembic migration** `a1b2c3d4e5f6` created for all new indexes.
+- **All 286 unit tests pass**, `pytest -m unit` collects all 286, ruff passes, frontend builds cleanly.
 
 ### Phase 2: Next Sprint (Weeks 2-3) — High Priority
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 8 | Introduce application services for the 14 API routers that bypass them | Architecture | L | Correct Clean Architecture |
-| 9 | Add tests for `security.py` (raise to 90%+ coverage) | Testing | M | Security-critical code covered |
-| 10 | Add tests for `health.py` (raise to 90%+ coverage) | Testing | S | Infrastructure reliability |
-| 11 | Add `rate_limit` to GitHub/Anthropic API tasks | Performance | S | Prevents rate limit exhaustion |
-| 12 | Add pagination to 7 unbounded repository methods | Performance | M | Prevents memory spikes |
-| 13 | Add `selectinload()` to remaining repository methods | Performance | M | Eliminates N+1 queries |
-| 14 | Add `pool_recycle=3600` to async engine config | Performance | S | Prevents stale connections |
-| 15 | Fix README pnpm → npm contradiction | Documentation | S | Prevents contributor confusion |
-| 16 | Plan `openai` v1→v2 migration | Dependencies | M | Stay current on SDK |
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 8 | Introduce application services for the 14 API routers that bypass them | Architecture | L | Correct Clean Architecture | ✅ Done |
+| 9 | Add tests for `security.py` (raise to 90%+ coverage) | Testing | M | Security-critical code covered | ✅ Done |
+| 10 | Add tests for `health.py` (raise to 90%+ coverage) | Testing | S | Infrastructure reliability | ✅ Done |
+| 11 | Add `rate_limit` to GitHub/Anthropic API tasks | Performance | S | Prevents rate limit exhaustion | ✅ Done |
+| 12 | Add pagination to 7 unbounded repository methods | Performance | M | Prevents memory spikes | ✅ Done |
+| 13 | Add `selectinload()` to remaining repository methods | Performance | M | Eliminates N+1 queries | ✅ Done |
+| 14 | Add `pool_recycle=3600` to async engine config | Performance | S | Prevents stale connections | ✅ Done |
+| 15 | Fix README pnpm → npm contradiction | Documentation | S | Prevents contributor confusion | ✅ Done |
+| 16 | Plan `openai` v1→v2 migration | Dependencies | M | Stay current on SDK | ✅ Done |
 
-### Phase 3: This Quarter (Weeks 4-8) — Medium Priority
+**Phase 2 completion notes:**
+- **Task 8** (Architecture): Created 7 application services (`DashboardService`, `RepositoryQueryService`, `WorkflowQueryService`, `WorkflowRunQueryService`, `JobQueryService`, `AnalysisQueryService`, `LogSearchService`) and refactored 7 routers (`dashboard.py`, `repositories.py`, `workflows.py`, `runs.py`, `jobs.py`, `analysis.py`, `search.py`) to use them instead of importing directly from infrastructure. Updated all 6 affected test files to patch at the service module level. Updated `__init__.py` exports and coverage exclusions.
+- **Task 9** (`security.py`): Added 24 new tests covering `verify_api_key`, `validate_webhook_url`, `escape_like_pattern`, and `RateLimitMiddleware._check_memory_rate_limit`.
+- **Task 10** (`health.py`): Expanded from 4 to 10 tests, adding DB failure (503), Redis failure (503), both fail (503), and response format tests.
+- **Task 11** (Rate limits): Added `rate_limit` to all GitHub API tasks (`"30/m"`), sync_all (`"5/m"`), Anthropic LLM tasks (`"10/m"`), and OpenAI embedding tasks (`"20/m"`, batch: `"5/m"`, backfill: `"2/m"`).
+- **Tasks 12-13** (Pagination + selectinload): Added `limit`/`offset` defaults to `get_active()`, `get_by_owner()`, `get_by_run_id()`, `get_by_job_id()`, `get_by_log_id()`, `get_runs_in_timerange()`, `get_runs_before_date()`, `get_by_repo_id()`. Added `selectinload()` to `get_recent_failures()`, `get_by_branch()`, `get_by_repo_id()`, `get_logs_with_errors()`, `get_by_category()`.
+- **Task 14** (`session.py`): Added `pool_recycle=3600` to `create_async_engine()`.
+- **Task 15** (`README.md`): Changed `pnpm 9+` to `npm`.
+- **Task 16** (openai migration): Migration is very low risk — only `embedding_client.py` uses OpenAI, only the Embeddings API. The `AsyncOpenAI` client pattern and `embeddings.create()` interface are identical between v1 and v2. Migration = update `pyproject.toml` + run tests. Zero code changes expected.
+- **All 322 unit tests pass**, ruff is clean.
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 17 | Add cache-aside pattern to read-heavy API endpoints | Performance | M | Reduces DB load |
-| 18 | Write unit tests for 6 untested application services | Testing | L | True coverage improvement |
-| 19 | Write unit tests for domain entities/value objects | Testing | M | Domain logic verified |
-| 20 | Decompose `test_result_parser.py` (932 lines) into per-framework modules | Code Quality | M | Maintainability |
-| 21 | Reduce complexity of `update_prompt()` and `process_workflow_run()` | Code Quality | S | Readability |
-| 22 | Add type annotations to Celery task functions (fix 17 `[misc]` errors) | Type Safety | M | Type coverage |
-| 23 | Upgrade `redis` 5.x → 7.x | Dependencies | M | Security + features |
-| 24 | Upgrade `python-json-logger` 2.x → 4.x | Dependencies | S | Stay current |
-| 25 | Create `CONTRIBUTING.md` | Documentation | S | Onboarding |
-| 26 | Create `CHANGELOG.md` | Documentation | S | Release tracking |
-| 27 | Add `REDIS_URL` + comments to `.env.example` | Documentation | S | Developer experience |
+### Phase 3: This Quarter (Weeks 4-8) — Medium Priority  ✅ COMPLETED (2026-02-10)
 
-### Phase 4: Backlog — Low Priority
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 17 | Add cache-aside pattern to read-heavy API endpoints | Performance | M | Reduces DB load | ✅ Done |
+| 18 | Write unit tests for 6 untested application services | Testing | L | True coverage improvement | ✅ Done |
+| 19 | Write unit tests for domain entities/value objects | Testing | M | Domain logic verified | ✅ Done |
+| 20 | Decompose `test_result_parser.py` (932 lines) into per-framework modules | Code Quality | M | Maintainability | ✅ Done |
+| 21 | Reduce complexity of `update_prompt()` and `process_workflow_run()` | Code Quality | S | Readability | ✅ Done |
+| 22 | Add type annotations to Celery task functions (fix 17 `[misc]` errors) | Type Safety | M | Type coverage | ✅ Done |
+| 23 | Upgrade `redis` 5.x → 7.x | Dependencies | M | Security + features | ✅ Done |
+| 24 | Upgrade `python-json-logger` 2.x → 4.x | Dependencies | S | Stay current | ✅ Done |
+| 25 | Create `CONTRIBUTING.md` | Documentation | S | Onboarding | ✅ Done |
+| 26 | Create `CHANGELOG.md` | Documentation | S | Release tracking | ✅ Done |
+| 27 | Add `REDIS_URL` + comments to `.env.example` | Documentation | S | Developer experience | ✅ Done |
 
-| # | Task | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 28 | Write e2e tests (currently 0) | Testing | L | End-to-end confidence |
-| 29 | Write property-based tests with Hypothesis | Testing | M | Edge case discovery |
-| 30 | Remove `HelloWorld.vue` scaffold remnant | Frontend | S | Cleanup |
-| 31 | Move `autoprefixer`/`postcss` to devDependencies | Dependencies | S | Correctness |
-| 32 | Replace `console.error` with structured error logging in frontend | Frontend | S | Consistency |
-| 33 | Add `# nosec B311` to `trends.py` random usage | Dependencies | S | Suppress false positives |
-| 34 | Split `types/index.ts` into domain-specific type files | Frontend | S | Scalability |
-| 35 | Use shared Redis connection pool for pub/sub publish helpers | Performance | S | Minor optimization |
-| 36 | Add streaming for large log file downloads | Performance | M | Memory efficiency |
-| 37 | Verify if `psycopg2-binary` is needed for Alembic | Dependencies | S | Dependency cleanup |
-| 38 | Fix 3 PytestCollectionWarnings from `Test*` class names | Testing | S | Clean test output |
-| 39 | Upgrade `pytest` 8→9, `pytest-asyncio` 0.x→1.x | Dependencies | M | Stay current |
-| 40 | Upgrade `fastapi`, `pydantic`, `sentry-sdk`, `ruff`, `mypy` | Dependencies | M | Stay current |
+**Phase 3 completion notes:**
+- **Task 17** (Cache-aside): Added `CacheService` with TTL-based caching to `DashboardService`, `RepositoryQueryService`, `WorkflowQueryService`, and `WorkflowRunQueryService`. Cache invalidation on write operations.
+- **Task 18** (Service tests): Added 39 new unit tests across 4 test files: `test_prompt_service.py` (15 tests), `test_embedding_service.py` (12 tests), `test_notification_service.py` (6 tests), `test_search_service.py` (6 tests).
+- **Task 19** (Domain tests): Added 78 new unit tests across 4 test files: `test_pagination.py` (27 tests for Pagination + PaginatedResult), `test_time_range.py` (21 tests for TimeRange), `test_search_query.py` (19 tests for SearchQuery + SearchResult), `test_notification.py` (13 tests for Notification entity + payloads).
+- **Task 20** (Parser decomposition): Split 932-line monolith into `parsers/` sub-package with `base.py`, `python.py`, `javascript.py`, `jvm.py`, `ruby.py`, `systems.py`. Original module re-exports all symbols for backward compatibility.
+- **Task 21** (Complexity reduction): Extracted `_apply_field_updates()` from `update_prompt()` and `_save_job_log()`/`_parse_and_save_test_result()` from `process_workflow_run()`.
+- **Task 22** (Celery typing): Added `TypeVar`/`Coroutine` generics to `run_async()`, `self: Task` to bound tasks, `# type: ignore[misc]` for untyped Celery decorators across all 5 task files.
+- **Task 23** (Redis upgrade): Updated `redis[asyncio]` from 5.2.1 to 7.1.1. Async support is now built-in (no separate extra needed).
+- **Task 24** (JSON logger upgrade): Updated `python-json-logger` from 2.0.7 to 4.0.0. Backward compatible — same import path.
+- **Tasks 25-26** (Docs): Created `CONTRIBUTING.md` (dev setup, code quality, architecture, PR process) and `CHANGELOG.md` (Keep a Changelog format, documenting Phases 1-3).
+- **Task 27** (.env.example): Added `REDIS_URL` with inline comments explaining format and purpose.
+- **All 439 unit tests pass** (117 new tests added in Phase 3), ruff is clean.
+
+### Phase 4: Backlog — Low Priority  ✅ MOSTLY COMPLETED (2026-02-10)
+
+| # | Task | Category | Effort | Impact | Status |
+|---|------|----------|--------|--------|--------|
+| 28 | Write e2e tests (currently 0) | Testing | L | End-to-end confidence | ✅ Done |
+| 29 | Write property-based tests with Hypothesis | Testing | M | Edge case discovery | ✅ Done |
+| 30 | Remove `HelloWorld.vue` scaffold remnant | Frontend | S | Cleanup | ✅ Done |
+| 31 | Move `autoprefixer`/`postcss` to devDependencies | Dependencies | S | Correctness | ✅ Done |
+| 32 | Replace `console.error` with structured error logging in frontend | Frontend | S | Consistency | ✅ Done |
+| 33 | Add `# nosec B311` to `trends.py` random usage | Dependencies | S | Suppress false positives | ✅ Done |
+| 34 | Split `types/index.ts` into domain-specific type files | Frontend | S | Scalability | ✅ Done |
+| 35 | Use shared Redis connection pool for pub/sub publish helpers | Performance | S | Minor optimization | ✅ Done |
+| 36 | Add streaming for large log file downloads | Performance | M | Memory efficiency | ✅ Done |
+| 37 | Verify if `psycopg2-binary` is needed for Alembic | Dependencies | S | Dependency cleanup | ✅ Verified (needed) |
+| 38 | Fix 3 PytestCollectionWarnings from `Test*` class names | Testing | S | Clean test output | ✅ Done |
+| 39 | Upgrade `pytest` 8→9, `pytest-asyncio` 0.x→1.x | Dependencies | M | Stay current | Deferred |
+| 40 | Upgrade `fastapi`, `pydantic`, `sentry-sdk`, `ruff`, `mypy` | Dependencies | M | Stay current | Deferred |
+
+**Phase 4 completion notes:**
+- **Task 28** (e2e tests): Added 12 end-to-end tests covering health endpoints (root, ready, live), metrics, 404 handling, dashboard stats, repositories list, workflows list, runs list, and 3 trends endpoints.
+- **Task 29** (Property tests): Added 10 Hypothesis property-based tests covering Pagination (always-valid, monotonic offset, next/prev roundtrip), PaginatedResult (property consistency), TimeRange (non-negative duration, boundary containment, split contiguity, self-overlap), SearchQuery (clamping), SearchResult (is_relevant correctness).
+- **Task 30** (HelloWorld.vue): Removed unused scaffold component.
+- **Task 31** (devDependencies): Moved `autoprefixer` and `postcss` from `dependencies` to `devDependencies`.
+- **Task 32** (console.error): Replaced 3 `console.error` calls in `dashboard.ts` with `error.value` state updates for UI display.
+- **Task 33** (nosec): Added `# nosec B311 - used for demo/mock data only` to all 4 `import random` lines in `trends.py`.
+- **Task 34** (TypeScript types): Split `types/index.ts` (162 lines) into 6 domain-specific modules: `repository.ts`, `workflow.ts`, `job.ts`, `analysis.ts`, `dashboard.ts`, `search.ts`. Original `index.ts` is now a barrel re-export for backward compatibility.
+- **Task 35** (Redis pool): Replaced 5 per-call `redis.from_url()`/`r.close()` patterns with a shared `ConnectionPool` via `_get_sync_redis()` helper and centralized `_publish()` function.
+- **Task 36** (Log streaming): Rewrote `download_job_logs()` to use `client.stream()` with `aiter_bytes()` chunked reading, with configurable `max_size_bytes` (default 10MB) truncation.
+- **Task 37** (psycopg2-binary): Confirmed needed — Alembic's `env.py` uses `database_url_sync` which returns `postgresql://...`, requiring `psycopg2` as the default sync driver.
+- **Task 38** (PytestCollectionWarnings): Added `__test__ = False` to `TestResult`, `TestResultParserService`, and `TestResultRepository` classes. All 3 warnings eliminated.
+- **Tasks 39-40** (Dependency upgrades): Deferred — pytest 9 and pytest-asyncio 1.x involve breaking changes to configuration and async test patterns. fastapi/pydantic/ruff/mypy upgrades should be done in a dedicated migration sprint with full regression testing.
+- **All 461 unit tests pass** (22 new: 12 e2e + 10 property). Frontend builds cleanly.
 
 ---
 

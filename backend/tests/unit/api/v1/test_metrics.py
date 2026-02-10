@@ -7,6 +7,8 @@ from app.api.v1 import metrics
 from app.main import app
 
 
+pytestmark = pytest.mark.unit
+
 class TestMetricsEndpoint:
     """Tests for Prometheus metrics endpoint."""
 

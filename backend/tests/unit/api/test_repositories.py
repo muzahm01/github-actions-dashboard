@@ -7,6 +7,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestRepositoriesRouter:
     """Tests for repositories router configuration."""
 
@@ -71,7 +73,7 @@ class TestListRepositories:
         self, client: AsyncClient, mock_db_session: MagicMock, mock_repository: MagicMock
     ) -> None:
         """Should return list of repositories."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = [mock_repository]
             mock_repo_class.return_value = mock_repo
@@ -89,7 +91,7 @@ class TestListRepositories:
         self, client: AsyncClient, mock_db_session: MagicMock
     ) -> None:
         """Should return empty list when no repositories."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_all.return_value = []
             mock_repo_class.return_value = mock_repo
@@ -105,7 +107,7 @@ class TestListRepositories:
         self, client: AsyncClient, mock_db_session: MagicMock, mock_repository: MagicMock
     ) -> None:
         """Should filter active repositories only."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_active.return_value = [mock_repository]
             mock_repo_class.return_value = mock_repo
@@ -124,7 +126,7 @@ class TestGetRepository:
         self, client: AsyncClient, mock_db_session: MagicMock, mock_repository: MagicMock
     ) -> None:
         """Should return repository details."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_repository
             mock_repo_class.return_value = mock_repo
@@ -141,7 +143,7 @@ class TestGetRepository:
         self, client: AsyncClient, mock_db_session: MagicMock
     ) -> None:
         """Should return 404 for non-existent repository."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo
@@ -159,7 +161,7 @@ class TestActivateRepository:
         self, client: AsyncClient, mock_db_session: MagicMock, mock_repository: MagicMock
     ) -> None:
         """Should activate a repository."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_repository
             mock_repo.update.return_value = mock_repository
@@ -176,7 +178,7 @@ class TestActivateRepository:
         self, client: AsyncClient, mock_db_session: MagicMock
     ) -> None:
         """Should return 404 for non-existent repository."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo
@@ -194,7 +196,7 @@ class TestDeactivateRepository:
         self, client: AsyncClient, mock_db_session: MagicMock, mock_repository: MagicMock
     ) -> None:
         """Should deactivate a repository."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_repository
             mock_repo.update.return_value = mock_repository
@@ -211,7 +213,7 @@ class TestDeactivateRepository:
         self, client: AsyncClient, mock_db_session: MagicMock
     ) -> None:
         """Should return 404 for non-existent repository."""
-        with patch("app.api.v1.repositories.RepositoryRepository") as mock_repo_class:
+        with patch("app.application.services.repository_query_service.RepositoryRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo

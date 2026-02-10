@@ -7,6 +7,8 @@ import pytest
 from app.infrastructure.external.llm_client import ErrorAnalysisResult
 
 
+pytestmark = pytest.mark.unit
+
 class TestAnalysisTasks:
     """Tests for analysis Celery tasks."""
 

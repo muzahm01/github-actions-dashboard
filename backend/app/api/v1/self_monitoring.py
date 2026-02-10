@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -20,7 +21,7 @@ class SelfMonitoringStatus(BaseModel):
     repository: str
     last_check: str | None
     status: str  # "healthy", "degraded", "unhealthy", "unknown"
-    metrics: dict
+    metrics: dict[str, Any]
 
 
 class SelfMonitoringConfig(BaseModel):
@@ -40,7 +41,7 @@ class HealthCheckResult(BaseModel):
     status: str  # "ok", "warning", "error"
     message: str
     latency_ms: float | None = None
-    details: dict = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class SystemHealthResponse(BaseModel):
@@ -54,7 +55,7 @@ class SystemHealthResponse(BaseModel):
 
 
 # In-memory config storage (in production, use database)
-_self_monitoring_config: dict | None = None
+_self_monitoring_config: dict[str, Any] | None = None
 _startup_time: float | None = None
 
 

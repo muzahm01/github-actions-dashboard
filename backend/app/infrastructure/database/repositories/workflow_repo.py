@@ -1,5 +1,7 @@
 """Repository for workflows."""
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,9 +23,17 @@ class WorkflowRepository(BaseRepository[Workflow]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_repo_id(self, repo_id: int) -> list[Workflow]:
+    async def get_by_repo_id(
+        self, repo_id: int, limit: int = 100, offset: int = 0
+    ) -> list[Workflow]:
         """Get all workflows for a repository."""
-        stmt = select(Workflow).where(Workflow.repo_id == repo_id)
+        stmt = (
+            select(Workflow)
+            .where(Workflow.repo_id == repo_id)
+            .options(selectinload(Workflow.workflow_runs))
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -37,7 +47,7 @@ class WorkflowRepository(BaseRepository[Workflow]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def upsert_by_github_id(self, workflow_data: dict) -> Workflow:
+    async def upsert_by_github_id(self, workflow_data: dict[str, Any]) -> Workflow:
         """Insert or update workflow by GitHub ID."""
         github_id = workflow_data["github_id"]
         existing = await self.get_by_github_id(github_id)

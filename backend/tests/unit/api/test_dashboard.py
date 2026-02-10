@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestDashboardRouter:
     """Tests for dashboard router configuration."""
 

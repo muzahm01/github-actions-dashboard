@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Protocol
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class PromptTemplate:
             result = result.replace(placeholder, str(value))
         return result
 
-    def validate_variables(self, provided: dict) -> list[str]:
+    def validate_variables(self, provided: dict[str, Any]) -> list[str]:
         """Validate that all required variables are provided.
 
         Returns list of missing variables.
@@ -330,10 +330,7 @@ class PromptService:
         if variables is None:
             import re
 
-            variables = re.findall(r"\{(\w+)\}", template)
-            # Remove duplicates while preserving order
-            seen = set()
-            variables = [v for v in variables if not (v in seen or seen.add(v))]
+            variables = list(dict.fromkeys(re.findall(r"\{(\w+)\}", template)))
 
         prompt = PromptTemplate(
             id=len(self._custom_prompts) + 100,  # Start custom IDs at 100
@@ -382,6 +379,35 @@ class PromptService:
             return None
 
         # Apply updates
+        self._apply_field_updates(
+            prompt,
+            name=name,
+            template=template,
+            description=description,
+            variables=variables,
+            is_active=is_active,
+        )
+
+        # Save
+        if self._store:
+            prompt = await self._store.save(prompt)
+        else:
+            self._custom_prompts[prompt_id] = prompt
+
+        logger.info(f"Updated prompt: {prompt.name} ({prompt.id})")
+        return prompt
+
+    @staticmethod
+    def _apply_field_updates(
+        prompt: PromptTemplate,
+        *,
+        name: str | None,
+        template: str | None,
+        description: str | None,
+        variables: list[str] | None,
+        is_active: bool | None,
+    ) -> None:
+        """Apply non-None field updates to a prompt."""
         if name is not None:
             prompt.name = name
         if template is not None:
@@ -392,17 +418,7 @@ class PromptService:
             prompt.variables = variables
         if is_active is not None:
             prompt.is_active = is_active
-
         prompt.updated_at = datetime.utcnow()
-
-        # Save
-        if self._store:
-            prompt = await self._store.save(prompt)
-        else:
-            self._custom_prompts[prompt_id] = prompt
-
-        logger.info(f"Updated prompt: {prompt.name} ({prompt.id})")
-        return prompt
 
     async def delete_prompt(self, prompt_id: int) -> bool:
         """Delete a custom prompt."""
@@ -423,7 +439,7 @@ class PromptService:
     async def render_prompt(
         self,
         prompt_type: PromptType,
-        variables: dict,
+        variables: dict[str, Any],
         prompt_id: int | None = None,
     ) -> str:
         """Render a prompt with provided variables."""

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from app.domain.events.base import DomainEvent
@@ -25,7 +26,7 @@ class ErrorAnalysisRequested(DomainEvent):
         """Return event type identifier."""
         return "error_analysis.requested"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "log_id": self.log_id,
@@ -55,7 +56,7 @@ class ErrorAnalysisCompleted(DomainEvent):
         """Return event type identifier."""
         return "error_analysis.completed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "analysis_id": self.analysis_id,
@@ -85,7 +86,7 @@ class ErrorAnalysisFailed(DomainEvent):
         """Return event type identifier."""
         return "error_analysis.failed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "log_id": self.log_id,

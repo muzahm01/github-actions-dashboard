@@ -8,6 +8,8 @@ from app.config import Settings
 from app.infrastructure.cache.redis_cache import RedisCache
 
 
+pytestmark = pytest.mark.unit
+
 @pytest.fixture
 def test_settings() -> Settings:
     """Create test settings."""

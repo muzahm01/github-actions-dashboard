@@ -39,7 +39,7 @@ A comprehensive, self-hosted web application for monitoring and analyzing GitHub
 - Docker 27+ and Docker Compose 2.32+
 - Python 3.12+ (for local development)
 - [UV](https://docs.astral.sh/uv/) - Fast Python package manager
-- Node.js 22+ and pnpm 9+ (for frontend development)
+- Node.js 22+ and npm (for frontend development)
 - PostgreSQL 16 with pgvector extension
 - Redis 7+
 

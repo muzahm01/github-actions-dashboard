@@ -15,6 +15,8 @@ from app.application.services.webhook_processor import (
 from app.core.exceptions import WebhookValidationError
 
 
+pytestmark = pytest.mark.unit
+
 class TestGitHubWebhookValidator:
     """Test suite for GitHub webhook signature validation."""
 

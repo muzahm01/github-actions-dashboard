@@ -27,7 +27,7 @@ class WorkflowRun(Base, TimestampMixin):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflows.id"), nullable=False)
+    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflows.id"), nullable=False, index=True)
     github_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     run_number: Mapped[int] = mapped_column(Integer, nullable=False)
     run_attempt: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

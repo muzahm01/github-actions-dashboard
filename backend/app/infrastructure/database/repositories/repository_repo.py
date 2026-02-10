@@ -1,5 +1,7 @@
 """Repository for GitHub repositories."""
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,19 +28,29 @@ class RepositoryRepository(BaseRepository[Repository]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_active(self) -> list[Repository]:
+    async def get_active(self, limit: int = 100, offset: int = 0) -> list[Repository]:
         """Get all active repositories."""
-        stmt = select(Repository).where(Repository.is_active.is_(True))
+        stmt = (
+            select(Repository)
+            .where(Repository.is_active.is_(True))
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_owner(self, owner: str) -> list[Repository]:
+    async def get_by_owner(self, owner: str, limit: int = 100, offset: int = 0) -> list[Repository]:
         """Get all repositories for an owner/organization."""
-        stmt = select(Repository).where(Repository.owner == owner)
+        stmt = (
+            select(Repository)
+            .where(Repository.owner == owner)
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def upsert_by_github_id(self, repo_data: dict) -> Repository:
+    async def upsert_by_github_id(self, repo_data: dict[str, Any]) -> Repository:
         """Insert or update repository by GitHub ID."""
         github_id = repo_data["github_id"]
         existing = await self.get_by_github_id(github_id)

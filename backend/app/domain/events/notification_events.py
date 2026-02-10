@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from app.domain.events.base import DomainEvent
@@ -17,7 +18,7 @@ class NotificationRequested(DomainEvent):
     channel: str = ""
     title: str = ""
     message: str = ""
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     event_id: UUID = field(default_factory=uuid4)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
@@ -26,7 +27,7 @@ class NotificationRequested(DomainEvent):
         """Return event type identifier."""
         return "notification.requested"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "notification_type": self.notification_type,
@@ -52,7 +53,7 @@ class NotificationSent(DomainEvent):
         """Return event type identifier."""
         return "notification.sent"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "notification_id": self.notification_id,
@@ -78,7 +79,7 @@ class NotificationFailed(DomainEvent):
         """Return event type identifier."""
         return "notification.failed"
 
-    def _payload_dict(self) -> dict:
+    def _payload_dict(self) -> dict[str, Any]:
         """Return event payload."""
         return {
             "notification_id": self.notification_id,

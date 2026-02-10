@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestSemanticSearch:
     """Tests for POST /api/v1/search/semantic endpoint."""
 
@@ -21,8 +23,8 @@ class TestSemanticSearch:
         mock_log.log_content = "Error: test failed"
 
         with (
-            patch("app.api.v1.search.EmbeddingClient") as mock_client_class,
-            patch("app.api.v1.search.LogRepository") as mock_repo_class,
+            patch("app.application.services.log_search_service.EmbeddingClient") as mock_client_class,
+            patch("app.application.services.log_search_service.LogRepository") as mock_repo_class,
         ):
             mock_client = AsyncMock()
             mock_client.generate_embedding.return_value = [0.1] * 1536
@@ -50,7 +52,7 @@ class TestSemanticSearch:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return error message when embedding generation fails."""
-        with patch("app.api.v1.search.EmbeddingClient") as mock_client_class:
+        with patch("app.application.services.log_search_service.EmbeddingClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.generate_embedding.side_effect = Exception("API error")
             mock_client_class.return_value = mock_client
@@ -81,7 +83,7 @@ class TestTextSearch:
         mock_log.category = "build_failure"
         mock_log.log_content = "npm ERR! Build failed"
 
-        with patch("app.api.v1.search.LogRepository") as mock_repo_class:
+        with patch("app.application.services.log_search_service.LogRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.search_by_content.return_value = [mock_log]
             mock_repo_class.return_value = mock_repo
@@ -103,7 +105,7 @@ class TestTextSearch:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return empty results when no logs match."""
-        with patch("app.api.v1.search.LogRepository") as mock_repo_class:
+        with patch("app.application.services.log_search_service.LogRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.search_by_content.return_value = []
             mock_repo_class.return_value = mock_repo
@@ -134,7 +136,7 @@ class TestSearchLogs:
         mock_log.error_content = "AssertionError"
         mock_log.log_size_bytes = 1024
 
-        with patch("app.api.v1.search.LogRepository") as mock_repo_class:
+        with patch("app.application.services.log_search_service.LogRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.search_by_content.return_value = [mock_log]
             mock_repo_class.return_value = mock_repo
@@ -162,7 +164,7 @@ class TestSearchLogs:
         mock_log.error_content = None
         mock_log.log_size_bytes = 2048
 
-        with patch("app.api.v1.search.LogRepository") as mock_repo_class:
+        with patch("app.application.services.log_search_service.LogRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_category.return_value = [mock_log]
             mock_repo_class.return_value = mock_repo
@@ -189,7 +191,7 @@ class TestSearchLogs:
         mock_log.error_content = "Package not found"
         mock_log.log_size_bytes = 512
 
-        with patch("app.api.v1.search.LogRepository") as mock_repo_class:
+        with patch("app.application.services.log_search_service.LogRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_logs_with_errors.return_value = [mock_log]
             mock_repo_class.return_value = mock_repo
@@ -206,7 +208,7 @@ class TestSearchLogs:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should respect limit and offset parameters."""
-        with patch("app.api.v1.search.LogRepository") as mock_repo_class:
+        with patch("app.application.services.log_search_service.LogRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_logs_with_errors.return_value = []
             mock_repo_class.return_value = mock_repo

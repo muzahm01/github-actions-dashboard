@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.domain.entities.job import Job
 from app.domain.entities.repository import Repository
@@ -24,11 +24,7 @@ class SyncResult:
     workflows_synced: int = 0
     runs_synced: int = 0
     jobs_synced: int = 0
-    errors: list[str] = None
-
-    def __post_init__(self) -> None:
-        if self.errors is None:
-            self.errors = []
+    errors: list[str] = field(default_factory=list)
 
     @property
     def has_errors(self) -> bool:
@@ -43,11 +39,11 @@ class SyncResult:
 class GitHubClient(Protocol):
     """Protocol for GitHub API client."""
 
-    async def get_repositories(self, org: str) -> list[dict]:
+    async def get_repositories(self, org: str) -> list[dict[str, Any]]:
         """Get repositories for organization."""
         ...
 
-    async def get_workflows(self, owner: str, repo: str) -> list[dict]:
+    async def get_workflows(self, owner: str, repo: str) -> list[dict[str, Any]]:
         """Get workflows for repository."""
         ...
 
@@ -58,7 +54,7 @@ class GitHubClient(Protocol):
         workflow_id: int | None = None,
         created: str | None = None,
         per_page: int = 30,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Get workflow runs."""
         ...
 
@@ -67,7 +63,7 @@ class GitHubClient(Protocol):
         owner: str,
         repo: str,
         run_id: int,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Get jobs for a workflow run."""
         ...
 
@@ -227,7 +223,7 @@ class GitHubSyncService:
 
         return result
 
-    async def _sync_repository(self, data: dict) -> Repository:
+    async def _sync_repository(self, data: dict[str, Any]) -> Repository:
         """Sync a single repository."""
         github_id = data["id"]
 
@@ -251,7 +247,7 @@ class GitHubSyncService:
         )
         return await self._repo_store.save(repo)
 
-    async def _sync_workflow(self, repository_id: int, data: dict) -> Workflow:
+    async def _sync_workflow(self, repository_id: int, data: dict[str, Any]) -> Workflow:
         """Sync a single workflow."""
         github_id = data["id"]
 
@@ -272,7 +268,7 @@ class GitHubSyncService:
         )
         return await self._workflow_store.save(workflow)
 
-    async def _sync_run(self, data: dict) -> WorkflowRun:
+    async def _sync_run(self, data: dict[str, Any]) -> WorkflowRun:
         """Sync a single workflow run."""
         github_id = data["id"]
 
@@ -310,7 +306,7 @@ class GitHubSyncService:
 
         return await self._run_store.save(run)
 
-    async def _sync_job(self, run_id: int, data: dict) -> Job:
+    async def _sync_job(self, run_id: int, data: dict[str, Any]) -> Job:
         """Sync a single job."""
         github_id = data["id"]
 

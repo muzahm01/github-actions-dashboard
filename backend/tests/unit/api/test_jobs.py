@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 
+pytestmark = pytest.mark.unit
+
 class TestGetJob:
     """Tests for GET /api/v1/jobs/{job_id} endpoint."""
 
@@ -23,7 +25,7 @@ class TestGetJob:
         mock_job.runner_name = "ubuntu-latest"
         mock_job.html_url = "https://github.com/org/repo/actions/runs/123/job/456"
 
-        with patch("app.api.v1.jobs.JobRepository") as mock_repo_class:
+        with patch("app.application.services.job_query_service.JobRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = mock_job
             mock_repo_class.return_value = mock_repo
@@ -40,7 +42,7 @@ class TestGetJob:
     @pytest.mark.asyncio
     async def test_get_job_not_found(self, client: AsyncClient, mock_db_session: AsyncMock) -> None:
         """Should return 404 when job does not exist."""
-        with patch("app.api.v1.jobs.JobRepository") as mock_repo_class:
+        with patch("app.application.services.job_query_service.JobRepository") as mock_repo_class:
             mock_repo = AsyncMock()
             mock_repo.get_by_id.return_value = None
             mock_repo_class.return_value = mock_repo
@@ -72,8 +74,8 @@ class TestGetJobLogs:
         mock_log.category = None
 
         with (
-            patch("app.api.v1.jobs.JobRepository") as mock_job_repo_class,
-            patch("app.api.v1.jobs.LogRepository") as mock_log_repo_class,
+            patch("app.application.services.job_query_service.JobRepository") as mock_job_repo_class,
+            patch("app.application.services.job_query_service.LogRepository") as mock_log_repo_class,
         ):
             mock_job_repo = AsyncMock()
             mock_job_repo.get_by_id.return_value = mock_job
@@ -96,7 +98,7 @@ class TestGetJobLogs:
         self, client: AsyncClient, mock_db_session: AsyncMock
     ) -> None:
         """Should return 404 when job does not exist."""
-        with patch("app.api.v1.jobs.JobRepository") as mock_job_repo_class:
+        with patch("app.application.services.job_query_service.JobRepository") as mock_job_repo_class:
             mock_job_repo = AsyncMock()
             mock_job_repo.get_by_id.return_value = None
             mock_job_repo_class.return_value = mock_job_repo
@@ -114,8 +116,8 @@ class TestGetJobLogs:
         mock_job.id = 1
 
         with (
-            patch("app.api.v1.jobs.JobRepository") as mock_job_repo_class,
-            patch("app.api.v1.jobs.LogRepository") as mock_log_repo_class,
+            patch("app.application.services.job_query_service.JobRepository") as mock_job_repo_class,
+            patch("app.application.services.job_query_service.LogRepository") as mock_log_repo_class,
         ):
             mock_job_repo = AsyncMock()
             mock_job_repo.get_by_id.return_value = mock_job

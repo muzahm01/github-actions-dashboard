@@ -2,7 +2,11 @@
 
 import asyncio
 import logging
+from collections.abc import Coroutine
 from datetime import datetime
+from typing import Any, TypeVar, cast
+
+from celery import Task
 
 from app.config import get_settings
 from app.infrastructure.database.models.error_analysis import ErrorAnalysis
@@ -23,7 +27,10 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def run_async(coro):  # type: ignore[no-untyped-def]
+_T = TypeVar("_T")
+
+
+def run_async(coro: Coroutine[Any, Any, _T]) -> _T:
     """Helper to run async code in sync Celery tasks."""
     loop = asyncio.new_event_loop()
     try:
@@ -32,15 +39,15 @@ def run_async(coro):  # type: ignore[no-untyped-def]
         loop.close()
 
 
-@celery_app.task(bind=True, max_retries=2)
-def analyze_error_log(  # type: ignore[no-untyped-def]
-    self,
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="10/m")  # type: ignore[misc]
+def analyze_error_log(
+    self: Task,
     log_id: int,
     log_content: str | None = None,
     framework: str = "unknown",
     job_name: str = "unknown",
     save_to_db: bool = True,
-) -> dict:
+) -> dict[str, Any]:
     """
     Analyze an error log using Claude LLM and optionally save to database.
 
@@ -48,7 +55,7 @@ def analyze_error_log(  # type: ignore[no-untyped-def]
     """
     logger.info(f"Analyzing error log {log_id}")
 
-    async def _analyze() -> dict:
+    async def _analyze() -> dict[str, Any]:
         session_factory = get_session_factory()
         async with session_factory() as session:
             log_repo = LogRepository(session)
@@ -132,7 +139,7 @@ def analyze_error_log(  # type: ignore[no-untyped-def]
                 if "analysis_id" in result_dict:
                     publish_analysis_complete(
                         log_id=log_id,
-                        analysis_id=result_dict["analysis_id"],
+                        analysis_id=cast(int, result_dict["analysis_id"]),
                         data={
                             "error_summary": result.error_summary,
                             "confidence_score": result.confidence_score,
@@ -148,12 +155,12 @@ def analyze_error_log(  # type: ignore[no-untyped-def]
         raise self.retry(exc=e, countdown=120) from e
 
 
-@celery_app.task(bind=True, max_retries=2)
-def generate_embedding(  # type: ignore[no-untyped-def]
-    self,
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=120, time_limit=180, rate_limit="20/m")  # type: ignore[misc]
+def generate_embedding(
+    self: Task,
     log_id: int,
     content: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """
     Generate embedding for log content and save to database.
 
@@ -162,7 +169,7 @@ def generate_embedding(  # type: ignore[no-untyped-def]
     """
     logger.info(f"Generating embedding for log {log_id}")
 
-    async def _embed() -> dict:
+    async def _embed() -> dict[str, Any]:
         session_factory = get_session_factory()
         async with session_factory() as session:
             log_repo = LogRepository(session)
@@ -223,8 +230,10 @@ def generate_embedding(  # type: ignore[no-untyped-def]
         raise self.retry(exc=e, countdown=60) from e
 
 
-@celery_app.task
-def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = None) -> dict:
+@celery_app.task(soft_time_limit=300, time_limit=360, rate_limit="5/m")  # type: ignore[misc]
+def batch_generate_embeddings(
+    log_ids: list[int], contents: list[str] | None = None
+) -> dict[str, Any]:
     """
     Generate embeddings for multiple logs in batch and save to database.
 
@@ -232,7 +241,7 @@ def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = N
     """
     logger.info(f"Generating embeddings for {len(log_ids)} logs")
 
-    async def _batch_embed() -> dict:
+    async def _batch_embed() -> dict[str, Any]:
         session_factory = get_session_factory()
         async with session_factory() as session:
             log_repo = LogRepository(session)
@@ -294,8 +303,8 @@ def batch_generate_embeddings(log_ids: list[int], contents: list[str] | None = N
         return {"error": str(e), "logs_processed": 0}
 
 
-@celery_app.task
-def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict:
+@celery_app.task(soft_time_limit=600, time_limit=660, rate_limit="2/m")  # type: ignore[misc]
+def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict[str, Any]:
     """
     Generate embeddings for logs that don't have them.
 
@@ -303,7 +312,7 @@ def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict:
     """
     logger.info(f"Starting embedding backfill (batch_size={batch_size}, max={max_logs})")
 
-    async def _backfill() -> dict:
+    async def _backfill() -> dict[str, Any]:
         from sqlalchemy import select
 
         from app.infrastructure.database.models.log import Log
@@ -347,12 +356,12 @@ def backfill_embeddings(batch_size: int = 50, max_logs: int = 500) -> dict:
         return {"error": str(e), "status": "failed"}
 
 
-@celery_app.task
-def summarize_run_failures(run_id: int, failures: list[dict]) -> dict:
+@celery_app.task(soft_time_limit=120, time_limit=180, rate_limit="10/m")  # type: ignore[misc]
+def summarize_run_failures(run_id: int, failures: list[dict[str, Any]]) -> dict[str, Any]:
     """Summarize all failures in a workflow run."""
     logger.info(f"Summarizing failures for run {run_id}")
 
-    async def _summarize() -> dict:
+    async def _summarize() -> dict[str, Any]:
         client = ClaudeClient(settings)
         summary = await client.summarize_failures(failures)
         return {

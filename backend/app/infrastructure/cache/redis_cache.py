@@ -90,22 +90,22 @@ class RedisCache:
         """Generate cache key for error analysis."""
         return f"analysis:{log_hash}"
 
-    async def get_analysis(self, log_content: str) -> dict | None:
+    async def get_analysis(self, log_content: str) -> dict[str, Any] | None:
         """Get cached error analysis by log content hash."""
         log_hash = self.compute_hash(log_content)
         return await self.get(self._analysis_key(log_hash))
 
-    async def set_analysis(self, log_content: str, analysis: dict, ttl: int | None = None) -> bool:
+    async def set_analysis(self, log_content: str, analysis: dict[str, Any], ttl: int | None = None) -> bool:
         """Cache error analysis by log content hash."""
         log_hash = self.compute_hash(log_content)
         return await self.set(self._analysis_key(log_hash), analysis, ttl)
 
-    async def get_analysis_by_hash(self, log_hash: str) -> dict | None:
+    async def get_analysis_by_hash(self, log_hash: str) -> dict[str, Any] | None:
         """Get cached error analysis by pre-computed hash."""
         return await self.get(self._analysis_key(log_hash))
 
     async def set_analysis_by_hash(
-        self, log_hash: str, analysis: dict, ttl: int | None = None
+        self, log_hash: str, analysis: dict[str, Any], ttl: int | None = None
     ) -> bool:
         """Cache error analysis by pre-computed hash."""
         return await self.set(self._analysis_key(log_hash), analysis, ttl)

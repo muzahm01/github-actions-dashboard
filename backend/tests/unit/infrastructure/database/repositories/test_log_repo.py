@@ -7,6 +7,8 @@ import pytest
 from app.infrastructure.database.repositories.log_repo import LogRepository
 
 
+pytestmark = pytest.mark.unit
+
 class TestLogRepository:
     """Tests for LogRepository."""
 

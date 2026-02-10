@@ -8,6 +8,8 @@ from app.config import Settings
 from app.infrastructure.external.llm_client import ClaudeClient, ErrorAnalysisResult
 
 
+pytestmark = pytest.mark.unit
+
 class TestClaudeClientInit:
     """Tests for ClaudeClient initialization."""
 

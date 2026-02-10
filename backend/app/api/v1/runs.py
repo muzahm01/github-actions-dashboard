@@ -1,11 +1,11 @@
 """Workflow run endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database.repositories.workflow_run_repo import WorkflowRunRepository
+from app.application.services.workflow_run_query_service import WorkflowRunQueryService
 from app.infrastructure.database.session import get_db
 
 router = APIRouter()
@@ -17,17 +17,10 @@ async def list_runs(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     conclusion: str | None = Query(default=None),
-) -> dict:
+) -> dict[str, Any]:
     """List all workflow runs with pagination and optional filtering."""
-    repo = WorkflowRunRepository(db)
-
-    # If filtering by failure conclusion, use specialized method
-    if conclusion == "failure":
-        runs = await repo.get_recent_failures(limit=limit)
-        total = len(runs)
-    else:
-        runs = await repo.get_all(limit=limit, offset=offset)
-        total = await repo.count()
+    service = WorkflowRunQueryService(db)
+    runs, total = await service.list_runs(limit=limit, offset=offset, conclusion=conclusion)
 
     return {
         "runs": [
@@ -56,10 +49,10 @@ async def list_runs(
 async def get_recent_failures(
     db: Annotated[AsyncSession, Depends(get_db)],
     limit: int = Query(default=10, ge=1, le=50),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Get recent failed workflow runs."""
-    repo = WorkflowRunRepository(db)
-    runs = await repo.get_recent_failures(limit=limit)
+    service = WorkflowRunQueryService(db)
+    runs = await service.get_recent_failures(limit=limit)
 
     return [
         {
@@ -85,10 +78,10 @@ async def get_recent_failures(
 async def get_run(
     run_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Get workflow run details with jobs."""
-    repo = WorkflowRunRepository(db)
-    run = await repo.get_with_jobs(run_id)
+    service = WorkflowRunQueryService(db)
+    run = await service.get_run_with_jobs(run_id)
 
     if not run:
         raise HTTPException(
