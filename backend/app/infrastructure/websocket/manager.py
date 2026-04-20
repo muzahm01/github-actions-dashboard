@@ -20,11 +20,21 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
         self._max_connections = max_connections
 
-    async def connect(self, websocket: WebSocket, token: str | None = None) -> bool:
+    async def connect(
+        self,
+        websocket: WebSocket,
+        token: str | None = None,
+        subprotocol: str | None = None,
+    ) -> bool:
         """Accept and store a new WebSocket connection.
 
         Returns True if the connection was accepted, False otherwise.
         Enforces a maximum connection limit and optional token auth.
+
+        When ``subprotocol`` is provided, it is echoed back in the accept
+        handshake. This is how clients should pass credentials — via
+        ``Sec-WebSocket-Protocol`` — instead of the URL, since query strings
+        are recorded in access logs, browser history, and upstream proxies.
         """
         # Enforce connection limit to prevent resource exhaustion
         if len(self.active_connections) >= self._max_connections:
@@ -33,19 +43,22 @@ class ConnectionManager:
             return False
 
         # Optional token auth in production
-        from app.config import get_settings
+        from app.config import WEAK_SECRET_KEY_VALUES, get_settings
 
         settings = get_settings()
         if (
             settings.environment == "production"
-            and settings.secret_key not in ("change-me-in-production", "")
+            and settings.secret_key not in WEAK_SECRET_KEY_VALUES
             and (not token or not secrets.compare_digest(token, settings.secret_key))
         ):
             await websocket.close(code=1008)  # Policy Violation
             logger.warning("WebSocket rejected: invalid or missing token")
             return False
 
-        await websocket.accept()
+        if subprotocol:
+            await websocket.accept(subprotocol=subprotocol)
+        else:
+            await websocket.accept()
         self.active_connections.append(websocket)
         logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
         return True

@@ -10,6 +10,21 @@ from app.infrastructure.websocket.manager import connection_manager
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Subprotocol prefix used to pass the API key via Sec-WebSocket-Protocol.
+# Example client: ``new WebSocket(url, ["api-key.<token>"])``.
+_AUTH_SUBPROTOCOL_PREFIX = "api-key."
+
+
+def _extract_token_from_subprotocols(websocket: WebSocket) -> tuple[str | None, str | None]:
+    """Return (token, subprotocol_to_echo) from Sec-WebSocket-Protocol, if any."""
+    raw = websocket.headers.get("sec-websocket-protocol")
+    if not raw:
+        return None, None
+    for offered in (p.strip() for p in raw.split(",")):
+        if offered.startswith(_AUTH_SUBPROTOCOL_PREFIX):
+            return offered[len(_AUTH_SUBPROTOCOL_PREFIX):], offered
+    return None, None
+
 
 @router.websocket("/ws")
 async def websocket_endpoint(
@@ -30,9 +45,29 @@ async def websocket_endpoint(
     - Server sends: {"type": "pong"} in response
     - Server broadcasts: Various event types with relevant data
 
-    In production, supply ?token=<api-key> for authentication.
+    Authentication (production):
+    - Preferred: supply the API key via the ``Sec-WebSocket-Protocol`` header
+      using the subprotocol ``api-key.<token>`` (e.g. JS:
+      ``new WebSocket(url, ["api-key.<token>"])``).
+    - Deprecated: the ``?token=<api-key>`` query parameter is still accepted
+      for backward compatibility, but tokens in URLs end up in access logs,
+      browser history, and upstream proxies — migrate clients to the
+      subprotocol form.
     """
-    connected = await connection_manager.connect(websocket, token=token)
+    subprotocol_token, echo_subprotocol = _extract_token_from_subprotocols(websocket)
+    if subprotocol_token is not None:
+        auth_token: str | None = subprotocol_token
+    else:
+        if token is not None:
+            logger.warning(
+                "WebSocket client sent auth token in URL query string; "
+                "this is deprecated — use the 'api-key.<token>' subprotocol instead."
+            )
+        auth_token = token
+
+    connected = await connection_manager.connect(
+        websocket, token=auth_token, subprotocol=echo_subprotocol
+    )
     if not connected:
         return
     try:

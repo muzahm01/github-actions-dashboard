@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.config import get_settings
+from app.config import WEAK_SECRET_KEY_VALUES, get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,9 @@ async def verify_api_key(
     settings = get_settings()
 
     # In dev/testing with default secret, allow unauthenticated access
-    if settings.environment in ("development", "testing") and settings.secret_key in (
-        "change-me-in-production",
-        "",
+    if (
+        settings.environment in ("development", "testing")
+        and settings.secret_key in WEAK_SECRET_KEY_VALUES
     ):
         return "dev-bypass"
 

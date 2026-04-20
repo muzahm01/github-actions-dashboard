@@ -1,7 +1,6 @@
 """FastAPI application entry point."""
 
 import logging
-import warnings
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -27,20 +26,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     setup_logging(settings.log_level)
 
-    # ---- Production safety checks ----
-    if settings.environment == "production":
-        if settings.secret_key in ("change-me-in-production", ""):
-            warnings.warn(
-                "CRITICAL: SECRET_KEY is set to the default value in production! "
-                "Set a strong, random SECRET_KEY environment variable.",
-                stacklevel=2,
-            )
-        if not settings.github_webhook_secret:
-            warnings.warn(
-                "WARNING: GITHUB_WEBHOOK_SECRET is empty — webhook signature "
-                "validation is effectively disabled.",
-                stacklevel=2,
-            )
+    # Weak/empty SECRET_KEY, POSTGRES_PASSWORD, REDIS_URL, and http:// CORS
+    # origins are rejected at Settings-load time by _enforce_production_secrets.
+    # This remaining check is a soft warning because an empty webhook secret
+    # disables *verification* but the app can still boot without it.
+    if settings.environment == "production" and not settings.github_webhook_secret:
+        logger.warning(
+            "GITHUB_WEBHOOK_SECRET is empty — webhook signature validation is disabled."
+        )
 
     logger.info(
         "Starting GitHub Actions Dashboard",

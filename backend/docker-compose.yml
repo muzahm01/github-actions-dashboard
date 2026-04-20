@@ -4,16 +4,16 @@ services:
     image: pgvector/pgvector:pg16
     container_name: gha-postgres
     environment:
-      POSTGRES_USER: gha
-      POSTGRES_PASSWORD: gha_secret
-      POSTGRES_DB: github_actions
+      POSTGRES_USER: ${POSTGRES_USER:-gha}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-github_actions}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gha -d github_actions"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gha} -d ${POSTGRES_DB:-github_actions}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,11 +41,11 @@ services:
     environment:
       - ENVIRONMENT=development
       - DEBUG=true
-      - POSTGRES_USER=gha
-      - POSTGRES_PASSWORD=gha_secret
+      - POSTGRES_USER=${POSTGRES_USER:-gha}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=github_actions
+      - POSTGRES_DB=${POSTGRES_DB:-github_actions}
       - REDIS_URL=redis://redis:6379/0
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
@@ -71,11 +71,11 @@ services:
     container_name: gha-celery-worker
     environment:
       - ENVIRONMENT=development
-      - POSTGRES_USER=gha
-      - POSTGRES_PASSWORD=gha_secret
+      - POSTGRES_USER=${POSTGRES_USER:-gha}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=github_actions
+      - POSTGRES_DB=${POSTGRES_DB:-github_actions}
       - REDIS_URL=redis://redis:6379/0
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
